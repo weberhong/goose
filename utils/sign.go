@@ -21,17 +21,17 @@ func StringSignMd5(text string) int64 {
  }
 
 
- // 字符串签名为数字,使用BKDRHash算法.
- func StringSignBKDR(text string) int64 {
+// 字符串签名为数字,使用BKDRHash算法.
+func StringSignBKDR(text string) int64 {
     // 代码参考:
     // https://www.byvoid.com/blog/string-hash-compare
-     var seed int64 = 131   // 31 131 1313 13131 131313 etc..
-     var hash int64
+    var seed int64 = 131   // 31 131 1313 13131 131313 etc..
+    var hash int64
 
-     for _,c := range text {
-         hash = hash * seed + int64(c)
-     }
+    for _,c := range text {
+        hash = hash * seed + int64(c)
+    }
 
-     return hash
- }
+    return hash
+}
 
