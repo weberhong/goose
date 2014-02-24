@@ -68,7 +68,7 @@ func (this *StaticIndexer) BuildIndex(iter DocIterator) (error) {
 
     // 把全部待处理的doc都塞入parseDocChan处理
     oneDoc := iter.NextDoc()
-    for ;oneDoc != iter ;oneDoc = iter.NextDoc() {
+    for ;oneDoc != nil;oneDoc = iter.NextDoc() {
         this.finishedWg.Add(1)
         this.parseDocChan <- oneDoc
     }
@@ -173,7 +173,7 @@ func (this *VarIndexer) BuildIndex(iter DocIterator) (error) {
     defer this.lock.Unlock()
 
     oneDoc := iter.NextDoc()
-    for ;oneDoc != iter ;oneDoc = iter.NextDoc() {
+    for ;oneDoc != nil;oneDoc = iter.NextDoc() {
         var err error
         // parse
         parseRes := &docParsed{}
