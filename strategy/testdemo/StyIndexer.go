@@ -1,4 +1,4 @@
-package strategysimple
+package testdemo
 
 import (
     . "github.com/getwe/goose/utils"
