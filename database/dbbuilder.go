@@ -2,6 +2,7 @@ package database
 
 import (
 	. "github.com/getwe/goose/utils"
+    "os"
 )
 
 // 静态索引生成器.并发不安全,内部不加锁浪费性能.调用者需要保证不并发使用.
@@ -113,6 +114,14 @@ func (this *DBBuilder) Init(fPath string,MaxTermCnt int,
     this.valueSz = valueSz
     this.maxDataFileSz = maxDataFileSz
     this.maxIndexFileSz = maxIndexFileSz
+
+    if _,err := os.Stat(this.filePath); os.IsNotExist(err) {
+        err := os.MkdirAll(this.filePath,0755)
+        if err != nil {
+            return err
+        }
+    }
+
 
     err = this.transformMgr.Init(fPath,MaxTermCnt)
     if err != nil { return err }
