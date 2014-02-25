@@ -96,19 +96,22 @@ func (this *StyIndexer) ParseDoc(doc interface{}) (
 }
 
 // 调用一次初始化
-func (this *StyIndexer) Init(conf toml.Document) (error) {
+func (this *StyIndexer) Init(conf toml.Document) (err error) {
 
     // scws初始化
     scwsDictPath := conf.GetString("Strategy.Indexer.Scws.xdbdict")
     scwsRulePath := conf.GetString("Strategy.Indexer.Scws.rules")
     scwsForkCnt  := runtime.NumCPU()
     this.scws = scws4go.NewScws()
-    this.scws.SetDict(scwsDictPath, scws4go.SCWS_XDICT_XDB|scws4go.SCWS_XDICT_MEM)
-    this.scws.SetRule(scwsRulePath)
+    err = this.scws.SetDict(scwsDictPath, scws4go.SCWS_XDICT_XDB|scws4go.SCWS_XDICT_MEM)
+    if err != nil { return }
+    err = this.scws.SetRule(scwsRulePath)
+    if err != nil { return }
     this.scws.SetCharset("utf8")
     this.scws.SetIgnore(1)
     this.scws.SetMulti(scws4go.SCWS_MULTI_SHORT & scws4go.SCWS_MULTI_DUALITY & scws4go.SCWS_MULTI_ZMAIN)
-    this.scws.Init(scwsForkCnt)
+    err = this.scws.Init(scwsForkCnt)
+    if err != nil { return }
 
     return nil
 }
