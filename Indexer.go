@@ -5,7 +5,7 @@ import (
     . "github.com/getwe/goose/database"
     "sync"
     "runtime"
-    log "code.google.com/p/log4go"
+    log "github.com/alecthomas/log4go"
 )
 
 type DocIterator interface {

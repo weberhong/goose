@@ -6,7 +6,7 @@ import (
     . "github.com/getwe/goose/database"
     "os"
     "runtime"
-    log "code.google.com/p/log4go"
+    log "github.com/alecthomas/log4go"
 )
 
 // Goose的静态库生成程序.

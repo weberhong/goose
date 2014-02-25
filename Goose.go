@@ -4,7 +4,7 @@ import (
     "fmt"
     "os"
     flags "github.com/jessevdk/go-flags"
-    log "code.google.com/p/log4go"
+    log "github.com/alecthomas/log4go"
     "time"
 )
 
