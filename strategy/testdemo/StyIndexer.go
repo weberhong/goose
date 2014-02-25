@@ -6,6 +6,7 @@ import (
     "github.com/getwe/scws4go"
 	"encoding/json"
     "reflect"
+    "runtime"
 )
 
 type oneDocJson struct {
@@ -100,7 +101,7 @@ func (this *StyIndexer) Init(conf toml.Document) (error) {
     // scws初始化
     scwsDictPath := conf.GetString("Strategy.Indexer.Scws.xdbdict")
     scwsRulePath := conf.GetString("Strategy.Indexer.Scws.rules")
-    scwsForkCnt  := conf.GetInt("Strategy.Indexer.Scws.forkCount")
+    scwsForkCnt  := runtime.NumCPU()
     this.scws = scws4go.NewScws()
     this.scws.SetDict(scwsDictPath, scws4go.SCWS_XDICT_XDB|scws4go.SCWS_XDICT_MEM)
     this.scws.SetRule(scwsRulePath)
