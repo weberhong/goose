@@ -2,7 +2,7 @@ package testdemo
 
 import (
     . "github.com/getwe/goose/utils"
-    "github.com/laurent22/toml-go/toml"
+    "github.com/laurent22/toml-go"
     "github.com/getwe/scws4go"
 	"encoding/json"
     "reflect"

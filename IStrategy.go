@@ -3,7 +3,7 @@ package goose
 import (
     . "github.com/getwe/goose/utils"
     . "github.com/getwe/goose/database"
-    "github.com/laurent22/toml-go/toml"
+    "github.com/laurent22/toml-go"
 )
 
 // 建索引策略.

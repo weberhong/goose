@@ -5,7 +5,7 @@
 MaxProcs = 0
 
     # 建库数据库的相关配置
-    [DataBase]
+    [GooseBuild.DataBase]
     # 索引库的目标位置
     DbPath = "data/testdemo"
     # 正排转倒排的内存缓冲区最大容纳term数量.
@@ -22,13 +22,13 @@ MaxProcs = 0
 
 [Strategy]
     # 建库策略
-    [Indexer]
-        [Scws]
+    [Strategy.Indexer]
+        [Strategy.Indexer.Scws]
         xdbdict = "dict/dict.utf8.xdb"
         rules = "dict/rules.utf8.ini"
     # 检索策略
-    [Searcher]
-        [Scws]
+    [Strategy.Searcher]
+        [Strategy.Indexer.Scws]
         xdbdict = "dict/dict.utf8.xdb"
         rules = "dict/rules.utf8.ini"
 
