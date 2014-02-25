@@ -1,11 +1,12 @@
 package goose
 
 import (
-    "github.com/laurent22/toml-go/toml"
+    "github.com/laurent22/toml-go"
     . "github.com/getwe/goose/utils"
     . "github.com/getwe/goose/database"
     "os"
     "runtime"
+    log "code.google.com/p/log4go"
 )
 
 // Goose的静态库生成程序.
@@ -45,6 +46,7 @@ func (this *GooseBuild) Run() (err error) {
 func (this *GooseBuild) Init(confPath string,indexSty IndexStrategy,toIndexFile string)(err error) {
     defer func() {
         if r := recover();r != nil {
+            log.Error(r)
             str := r.(string)
             err = NewGooseError("GooseBuild.Init","Catch Exception",str)
         }

@@ -5,6 +5,7 @@ import (
     "os"
     flags "github.com/jessevdk/go-flags"
     log "code.google.com/p/log4go"
+    "time"
 )
 
 // goose的入口程序.
@@ -36,7 +37,6 @@ func (this *Goose) SetSearchStrategy(sty SearchStrategy) {
 func (this *Goose) Run() {
     defer func() {
         if r := recover();r != nil {
-            fmt.Println(r)
             os.Exit(1)
         }
     }()
@@ -72,6 +72,7 @@ func (this *Goose) Run() {
 
     // init log
     log.LoadConfiguration(this.logConfPath)
+    log.Info("Load log conf finish")
 
     // run 
     if opts.BuildMode {
@@ -79,10 +80,19 @@ func (this *Goose) Run() {
     } else {
         this.searchModeRun()
     }
+
+
+    // BUG(log4go) log4go need time to sync ...(wtf)
+    // see http://stackoverflow.com/questions/14252766/abnormal-behavior-of-log4go
+    time.Sleep(100 * time.Millisecond)
 }
 
 // 建库模式运行
 func (this *Goose) buildModeRun() {
+    defer log.Close()
+
+    log.Info("build Mode Run")
+
     if this.indexSty == nil {
         log.Critical("Please set index strategy,see Goose.SetIndexStrategy()")
         return
@@ -91,14 +101,17 @@ func (this *Goose) buildModeRun() {
     gooseBuild := NewGooseBuild()
     err := gooseBuild.Init(this.confPath,this.indexSty,this.dataPath)
     if err != nil {
+        fmt.Println(err)
+        log.Error(err)
         return
     }
 
     err = gooseBuild.Run()
     if err != nil {
-        log.Critical(err)
+        log.Error(err)
         return
     }
+
 }
 
 // 检索模式运行

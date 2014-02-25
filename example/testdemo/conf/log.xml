@@ -4,7 +4,7 @@
     <tag>log</tag>
     <type>file</type>
     <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
-    <level>INFO</level>
+    <level>FINEST</level>
     <property name="filename">log/goose.log</property>
     <!--
        %T - Time (15:04:05 MST)
