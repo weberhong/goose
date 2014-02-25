@@ -5,6 +5,7 @@ import (
     . "github.com/getwe/goose/utils"
     . "github.com/getwe/goose/database"
     "os"
+    "runtime"
 )
 
 // Goose的静态库生成程序.
@@ -52,6 +53,13 @@ func (this *GooseBuild) Init(confPath string,indexSty IndexStrategy,toIndexFile 
     // load conf
     var parser toml.Parser
     this.conf = parser.ParseFile(confPath)
+
+    // set max procs
+    maxProcs := this.conf.GetInt("GooseBuild.MaxProcs",0)
+    if maxProcs <= 0 {
+        maxProcs = runtime.NumCPU()
+    }
+    runtime.GOMAXPROCS(maxProcs)
 
     // init dbbuilder
     dbPath := this.conf.GetString("GooseBuild.DataBase.DbPath")
