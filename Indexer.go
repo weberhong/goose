@@ -5,6 +5,7 @@ import (
     . "github.com/getwe/goose/database"
     "sync"
     "runtime"
+    log "code.google.com/p/log4go"
 )
 
 type DocIterator interface {
@@ -101,40 +102,43 @@ func (this *StaticIndexer) parseDoc(){
         // 阻塞等待队列有空余位置然后写入队列.
         this.writeDbQueue <- parseRes
     }
-    // TODO DEBUG LOG
-    // Finish parseDoc , goroutine exit.
+    log.Info("Finish parseDoc , goroutine exit.")
 }
 
 func (this *StaticIndexer) writeDoc() {
 
     for parseRes := range this.writeDbQueue {
+        defer this.finishedWg.Done()
+
         // id
         inId,err := this.db.AllocID(parseRes.outId)
         if err != nil {
-            // TODO warnning
+            log.Error(err)
+            continue
         }
 
         // index 
         err = this.db.WriteIndex(inId,parseRes.termList)
         if err != nil {
-            // TODO warnning
+            log.Error(err)
+            continue
         }
 
         // value
         err = this.db.WriteValue(inId,*(parseRes.value))
         if err != nil {
-            // TODO warnning
+            log.Error(err)
+            continue
         }
 
         // data
         err = this.db.WriteData(inId,*(parseRes.data))
         if err != nil {
-            // TODO warnning
+            log.Error(err)
+            continue
         }
-        this.finishedWg.Done()
     }
-    // TODO DEBUG LOG
-    // Finish writeDoc, goroutine exit.
+    log.Info("Finish writeDoc,goroutine exit.")
 }
 
 // 

@@ -4,6 +4,7 @@ import (
     "fmt"
     "os"
     flags "github.com/jessevdk/go-flags"
+    log "code.google.com/p/log4go"
 )
 
 // goose的入口程序.
@@ -15,6 +16,9 @@ type Goose struct {
 
     // 配置文件
     confPath    string
+
+    // 日志配置
+    logConfPath    string
 
     // 建库模式数据文件
     dataPath    string
@@ -36,7 +40,10 @@ func (this *Goose) Run() {
         BuildMode bool `short:"b" long:"build" description:"run in build mode"`
 
         // configure file
-        Configure string `short:"c" long:"conf" description:"congfigure file" required:"true"`
+        Configure string `short:"c" long:"conf" description:"congfigure file" default:"conf/goose.toml"`
+
+        // log configure file
+        LogConf   string `short:"l" long:"logconf" description:"log congfigure file" default:"conf/log.xml"`
 
         // build mode data file
         DataFile string `short:"d" long:"datafile" description:"build mode data file"`
@@ -47,15 +54,19 @@ func (this *Goose) Run() {
         fmt.Println(err)
         os.Exit(1)
     }
-
-    this.confPath = opts.Configure
-
     if opts.BuildMode && len(opts.DataFile) == 0 {
         parser.WriteHelp(os.Stderr)
         os.Exit(1)
     }
-    this.dataPath = opts.DataFile
 
+    this.confPath = opts.Configure
+    this.dataPath = opts.DataFile
+    this.logConfPath = opts.LogConf
+
+    // init log
+    log.LoadConfiguration(this.logConfPath)
+
+    // run 
     if opts.BuildMode {
         this.buildModeRun()
     } else {
@@ -66,20 +77,19 @@ func (this *Goose) Run() {
 // 建库模式运行
 func (this *Goose) buildModeRun() {
     if this.indexSty == nil {
-        // TODO FATAL LOG
+        log.Critical("Please set index strategy,see Goose.SetIndexStrategy()")
         return
     }
 
     gooseBuild := NewGooseBuild()
     err := gooseBuild.Init(this.confPath,this.indexSty,this.dataPath)
     if err != nil {
-        // TODO FATAL LOG
         return
     }
 
     err = gooseBuild.Run()
     if err != nil {
-        // TODO FATAL LOG
+        log.Critical(err)
         return
     }
 }
