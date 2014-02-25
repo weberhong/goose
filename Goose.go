@@ -34,6 +34,13 @@ func (this *Goose) SetSearchStrategy(sty SearchStrategy) {
 
 // 程序入口,解析程序参数,启动[建库|检索]模式
 func (this *Goose) Run() {
+    defer func() {
+        if r := recover();r != nil {
+            fmt.Println(r)
+            os.Exit(1)
+        }
+    }()
+
     // 解析命令行参数
     var opts struct {
         // build mode
