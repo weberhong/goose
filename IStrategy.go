@@ -17,6 +17,9 @@ type IndexStrategy interface {
 }
 
 type SearchStrategy interface {
+    // 全局初始化的接口
+    Init(conf toml.Document) (error)
+
     // 解析请求
     // 返回term列表,一个由策略决定的任意数据,后续接口都会透传
     ParseQuery(request []byte)([]TermInQuery,interface{},error)
