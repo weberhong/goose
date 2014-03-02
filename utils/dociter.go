@@ -40,7 +40,7 @@ func (this *BufferIterOnce) NextDoc() interface{} {
     return nil
 }
 
-func NewBufferIternOnce(buf []byte) (*BufferIterOnce) {
+func NewBufferIterOnce(buf []byte) (*BufferIterOnce) {
     bi := BufferIterOnce{}
     bi.buf = buf
     return &bi
