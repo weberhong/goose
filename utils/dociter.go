@@ -26,3 +26,23 @@ func NewFileIter(fh *os.File) (*FileIter) {
     return &fi
 }
 
+// 把一块buf当成一个doc一次返回
+type BufferIterOnce struct {
+    buf []byte
+}
+
+func (this *BufferIterOnce) NextDoc() interface{} {
+    if this.buf != nil {
+        tmp := this.buf
+        this.buf = nil
+        return tmp
+    }
+    return nil
+}
+
+func NewBufferIternOnce(buf []byte) (*BufferIterOnce) {
+    bi := BufferIterOnce{}
+    bi.buf = buf
+    return &bi
+}
+
