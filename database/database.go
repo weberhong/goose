@@ -26,6 +26,7 @@ type WriteOnlyIndex interface {
 }
 
 type IndexReader interface {
+    ReadIndex(t TermSign)(*InvList,error)
 }
 
 type IndexWriter interface {
@@ -35,7 +36,7 @@ type IndexWriter interface {
 
 type ValueReader interface {
     // 读取Value
-    ReadValue(InID InIdType) (*Value,error)
+    ReadValue(InID InIdType) (Value,error)
 }
 
 type ValueWriter interface {
@@ -55,17 +56,17 @@ type DataWriter interface {
 
 // 读索引接口
 type DataBaseReader interface {
-    // 输入term,读取库中的拉链
-    Read(t TermSign) (*InvList, error)
-
-    // 查询内部ID
-    GetInID(outID OutIdType) (InIdType,error)
-
     // 查询外部ID
-    GetOutID(InID OutIdType) (OutIdType,error)
+    GetOutID(inId InIdType)(OutIdType,error)
 
+    // 支持索引写入
+    IndexReader
+
+    // 支持Value读取
     ValueReader
 
+    // 支持Data读取
+    DataReader
 }
 
 // 可写入数据库接口
