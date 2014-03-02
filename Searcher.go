@@ -13,7 +13,7 @@ type Searcher struct {
     strategy SearchStrategy
 }
 
-func (s *Searcher) Search(request []byte) (response []byte,err error) {
+func (s *Searcher) Search(reqbuf []byte,resbuf []byte) (err error) {
     /*where := "Searcher.Search"
 
     // 解析请求
@@ -26,13 +26,13 @@ func (s *Searcher) Search(request []byte) (response []byte,err error) {
     // 构建查询树
 
 
-    return nil,nil
+    return nil
 }
 
 
 
 
-func CreateSearcher(db DataBaseReader,sty SearchStrategy) (*Searcher,error) {
+func NewSearcher(db DataBaseReader,sty SearchStrategy) (*Searcher,error) {
     var s Searcher
     s.db = db
     s.strategy = sty

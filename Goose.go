@@ -89,9 +89,6 @@ func (this *Goose) Run() {
 
 // 建库模式运行
 func (this *Goose) buildModeRun() {
-    defer log.Close()
-
-    log.Info("build Mode Run")
 
     if this.indexSty == nil {
         log.Critical("Please set index strategy,see Goose.SetIndexStrategy()")
@@ -116,9 +113,22 @@ func (this *Goose) buildModeRun() {
 
 // 检索模式运行
 func (this *Goose) searchModeRun() {
+
     if this.searchSty == nil {
+        log.Critical("Please set search strategy,see Goose.SetSearchStrategy()")
+        return
     }
-    // TODO
+
+    if this.indexSty == nil {
+        log.Warn("can't build index real time witout Index Strategy")
+    }
+
+    gooseSearch := NewGooseSearch()
+    err := gooseSearch.Init(this.confPath,this.indexSty,this.searchSty)
+    if err != nil {
+        log.Error(err)
+        return
+    }
 }
 
 func NewGoose() (*Goose) {
