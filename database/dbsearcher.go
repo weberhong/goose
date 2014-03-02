@@ -131,6 +131,13 @@ func (this *DBSearcher) Init(fPath string) (error) {
     return nil
 }
 
+// 进行一次数据同步.在支持动态库情况下进行一次磁盘同步
+func (this *DBSearcher) Sync() (error) {
+    // TODO
+    // for var index
+    return nil
+}
+
 func NewDBSearcher() (*DBSearcher) {
     db := DBSearcher{}
 
