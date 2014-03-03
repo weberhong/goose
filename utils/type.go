@@ -38,9 +38,35 @@ type Index struct {
 
 // 全文数据
 type Data []byte
+// NewData(length,capacity)
+func NewData(arg ...int) (*Data) {
+    var v Data
+    if len(arg) == 0 {
+        v = make([]byte,0)
+    } else if len(arg) == 1 {
+        v = make([]byte,arg[0])
+    } else {
+        v = make([]byte,arg[0],arg[1])
+    }
+    return &v
+}
+
 
 // value数据
 type Value []byte
+
+// NewValue(length,capacity)
+func NewValue(arg ...int) (*Value) {
+    var v Value
+    if len(arg) == 0 {
+        v = make([]byte,0)
+    } else if len(arg) == 1 {
+        v = make([]byte,arg[0])
+    } else {
+        v = make([]byte,arg[0],arg[1])
+    }
+    return &v
+}
 
 // term在doc中的信息
 type TermInDoc struct {
