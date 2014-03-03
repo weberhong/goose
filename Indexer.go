@@ -95,6 +95,7 @@ func (this *StaticIndexer) parseDoc(){
         parseRes.outId,parseRes.termList,parseRes.value,parseRes.data,
         err = this.strategy.ParseDoc(doc)
         if err != nil {
+            log.Error(err)
             parseRes = nil
         }
 
@@ -108,12 +109,18 @@ func (this *StaticIndexer) parseDoc(){
 func (this *StaticIndexer) writeDoc() {
 
     for parseRes := range this.writeDbQueue {
-        defer this.finishedWg.Done()
+
+        if parseRes == nil {
+            log.Error("get nil pointer from queue")
+            this.finishedWg.Done()
+            continue
+        }
 
         // id
         inId,err := this.db.AllocID(parseRes.outId)
         if err != nil {
             log.Error(err)
+            this.finishedWg.Done()
             continue
         }
 
@@ -121,6 +128,7 @@ func (this *StaticIndexer) writeDoc() {
         err = this.db.WriteIndex(inId,parseRes.termList)
         if err != nil {
             log.Error(err)
+            this.finishedWg.Done()
             continue
         }
 
@@ -128,6 +136,7 @@ func (this *StaticIndexer) writeDoc() {
         err = this.db.WriteValue(inId,*(parseRes.value))
         if err != nil {
             log.Error(err)
+            this.finishedWg.Done()
             continue
         }
 
@@ -135,6 +144,7 @@ func (this *StaticIndexer) writeDoc() {
         err = this.db.WriteData(inId,*(parseRes.data))
         if err != nil {
             log.Error(err)
+            this.finishedWg.Done()
             continue
         }
     }
