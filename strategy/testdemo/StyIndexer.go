@@ -7,12 +7,13 @@ import (
 	"encoding/json"
     "reflect"
     "runtime"
+    log "github.com/alecthomas/log4go"
 )
 
 type oneDocJson struct {
     title   string
     docid   uint32
-    hot     uint8
+    hot     int
     desc    string
 }
 
@@ -35,7 +36,7 @@ func (this *StyIndexer) ParseDoc(doc interface{}) (
     // ParseDoc的功能实现需要注意的是,这个函数是可并发的,使用StyIndexer.*需要注意安全
     defer func() {
         if r := recover();r != nil {
-            err = NewGooseError("ParseDoc","Catch Exception","")
+            err = log.Warn(r)
         }
     }()
 
@@ -43,10 +44,13 @@ func (this *StyIndexer) ParseDoc(doc interface{}) (
     realValue := reflect.ValueOf(doc)
     docbuf := realValue.Bytes()
     docJson := oneDocJson{}
-    err = json.Unmarshal(docbuf,docJson)
+    err = json.Unmarshal(docbuf,&docJson)
     if err != nil {
         return
     }
+
+    // outid
+    outId = OutIdType(docJson.docid)
 
     // 对title进行切词
     segResult,err := this.scws.Segment(docJson.title)
@@ -75,7 +79,8 @@ func (this *StyIndexer) ParseDoc(doc interface{}) (
         }
         termmap[tsign] = tweight
     }
-    termList = termList[0:0]
+
+    termList = make([]TermInDoc,0,len(termmap))
     for k,v := range termmap {
         termList = append(termList,TermInDoc{
             Sign : k,Weight : v})
@@ -84,12 +89,12 @@ func (this *StyIndexer) ParseDoc(doc interface{}) (
     // 从doc中提取需要写入Value的数据
     // 这个策略只使用value的一个字节,写入hot值
     // 合理情况这里应该从配置读取(或者在Init阶段提前读取)Value的长度
-    *value = make([]byte,1)
-    (*value)[0] = docJson.hot
+    value = NewValue(1)
+    (*value)[0] = byte(docJson.hot)
 
     // 从doc中提取需要写入Data的数据
     // 简单把全部传入的数据当成data返回
-    *data = make([]byte,len(docbuf))
+    data = NewData(len(docbuf))
     copy(*data,docbuf)
 
     return
