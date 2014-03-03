@@ -108,6 +108,10 @@ func (this *IdManager) AllocID(outId OutIdType) (InIdType,error) {
     this.lock.Lock()
     defer this.lock.Unlock()
 
+    if outId == 0 {
+        return 0,NewGooseError("AllocID","illegal outId","")
+    }
+
     if this.curId >= this.idStatus.MaxInId{
         return 0,NewGooseError("AllocID","id count limit","")
     }

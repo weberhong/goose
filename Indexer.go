@@ -147,6 +147,7 @@ func (this *StaticIndexer) writeDoc() {
             this.finishedWg.Done()
             continue
         }
+        this.finishedWg.Done()
     }
     log.Info("Finish writeDoc,goroutine exit.")
 }
