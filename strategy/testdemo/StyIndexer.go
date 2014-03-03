@@ -8,13 +8,15 @@ import (
     "reflect"
     "runtime"
     log "github.com/alecthomas/log4go"
+    "strconv"
+    "encoding/binary"
 )
 
 type oneDocJson struct {
-    title   string
-    docid   uint32
-    hot     int
-    desc    string
+    Title   string
+    Docid   string
+    Hot     string
+    Desc    string
 }
 
 // 建库的时候,goose框架建静态库读取文件认为一行是一个doc,动态库一个网络请求是一
@@ -43,17 +45,20 @@ func (this *StyIndexer) ParseDoc(doc interface{}) (
     // 策略假设每一个doc就是一个[]buf
     realValue := reflect.ValueOf(doc)
     docbuf := realValue.Bytes()
+
     docJson := oneDocJson{}
     err = json.Unmarshal(docbuf,&docJson)
     if err != nil {
+        err = log.Warn(string(docbuf))
         return
     }
 
     // outid
-    outId = OutIdType(docJson.docid)
+    idocid,_ := strconv.Atoi(docJson.Docid)
+    outId = OutIdType(idocid)
 
     // 对title进行切词
-    segResult,err := this.scws.Segment(docJson.title)
+    segResult,err := this.scws.Segment(docJson.Title)
     if err != nil {
         return
     }
@@ -87,10 +92,12 @@ func (this *StyIndexer) ParseDoc(doc interface{}) (
     }
 
     // 从doc中提取需要写入Value的数据
-    // 这个策略只使用value的一个字节,写入hot值
+    // 这个策略只使用value的4个字节,写入hot值
     // 合理情况这里应该从配置读取(或者在Init阶段提前读取)Value的长度
-    value = NewValue(1)
-    (*value)[0] = byte(docJson.hot)
+    value = NewValue(4)
+    hot,_ := strconv.Atoi(docJson.Hot)
+    order := binary.BigEndian
+    order.PutUint32(*value,uint32(hot))
 
     // 从doc中提取需要写入Data的数据
     // 简单把全部传入的数据当成data返回
