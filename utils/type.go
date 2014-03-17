@@ -6,6 +6,7 @@ import (
 
 const (
     GOOSE_MAX_INVLIST_SIZE = 10 * 10000
+    GOOSE_MAX_QUERY_TERM = 32
 )
 
 // 在整个检索系统中,都把term转换为64位签名使用
