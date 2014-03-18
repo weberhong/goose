@@ -8,6 +8,7 @@ import (
     log "github.com/alecthomas/log4go"
     "net"
     "fmt"
+    "sync"
 )
 
 // Goose检索程序.核心工作是提供检索服务,同时支持动态插入索引.
@@ -49,6 +50,10 @@ func (this *GooseSearch) Run() error {
     if err != nil {
         return err
     }
+
+    neverReturn := sync.WaitGroup{}
+    neverReturn.Add(1)
+    neverReturn.Wait()
 
     return nil
 }

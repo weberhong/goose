@@ -111,15 +111,15 @@ func NewMergeEngine(db DataBaseReader,termList []TermInQuery) (*MergeEngine,erro
     return &mg,nil
 }
 
-func (this *MergeEngine) Next(termInDoclist []TermInDoc) (currValid,allfinish bool) {
+func (this *MergeEngine) Next(termInDoclist []TermInDoc) (inId InIdType,currValid,allfinish bool) {
 
     if len(termInDoclist) != this.termCount {
         // TODO warnning
-        return false,false
+        return 0,false,false
     }
 
     if this.lstheap.Len() == 0 {
-        return false,false
+        return 0,false,false
     }
 
     // 初始化
@@ -173,6 +173,7 @@ func (this *MergeEngine) Next(termInDoclist []TermInDoc) (currValid,allfinish bo
         currValid = false
     }
 
+    inId = currInID
     currValid = true
     return
 }

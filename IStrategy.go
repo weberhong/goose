@@ -39,15 +39,15 @@ type SearchStrategy interface {
         termCnt uint32) (TermWeight,error)
 
     // 对结果拉链进行过滤
-    Filt(queryInfo interface{},list *SearchResultList) (error)
+    Filt(queryInfo interface{},list SearchResultList) (error)
 
     // 结果调权
     // 确认最终结果列表排序
-    Adjust(queryInfo interface{},list *SearchResult,db *ValueReader) (error)
+    Adjust(queryInfo interface{},list SearchResultList,db ValueReader) (error)
 
     // 构建返回包
-    Response(queryInfo interface{},list *SearchResultList,
-        db *DataBaseReader) (response []byte,err error)
+    Response(queryInfo interface{},list SearchResultList,
+        db DataBaseReader,response []byte) (err error)
 
 }
 

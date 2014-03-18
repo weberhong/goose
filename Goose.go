@@ -129,6 +129,12 @@ func (this *Goose) searchModeRun() {
         log.Error(err)
         return
     }
+
+    err = gooseSearch.Run()
+    if err != nil {
+        log.Error(err)
+        return
+    }
 }
 
 func NewGoose() (*Goose) {

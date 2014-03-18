@@ -2,7 +2,7 @@ package goose
 
 import (
 	. "github.com/getwe/goose/database"
-	//. "github.com/getwe/goose/utils"
+	. "github.com/getwe/goose/utils"
 )
 
 type Searcher struct {
@@ -13,18 +13,65 @@ type Searcher struct {
     strategy SearchStrategy
 }
 
-func (s *Searcher) Search(reqbuf []byte,resbuf []byte) (err error) {
-    /*where := "Searcher.Search"
+func (this *Searcher) Search(reqbuf []byte,resbuf []byte) (err error) {
+    where := "Searcher.Search"
 
     // 解析请求
-    termInQList,queryInfo,err := s.strategy.ParseQuery(request)
+    termInQList,queryInfo,err := this.strategy.ParseQuery(reqbuf)
     if err != nil {
-        return nil,NewGooseError(where,"parsequery fail",err.Error())
+        return NewGooseError(where,"parsequery fail",err.Error())
     }
-    */
 
     // 构建查询树
+    me,err := NewMergeEngine(this.db,termInQList)
+    if err != nil {
+        return NewGooseError(where,err.Error(),"")
+    }
 
+    result := make([]SearchResult,GOOSE_DEFAULT_SEARCH_RESULT_CAPACITY)
+
+    termInDocList := make([]TermInDoc,len(termInQList))
+    for {
+        inId,currValid,allfinish := me.Next(termInDocList); 
+        if currValid != true {
+            continue
+        }
+
+        outId,err := this.db.GetOutID(inId)
+        if err != nil {
+            continue
+        }
+
+        weight,err := this.strategy.CalWeight(queryInfo,inId,outId,
+            termInQList,termInDocList,uint32(len(termInQList)))
+        if err != nil {
+            continue
+        }
+
+        result = append(result,SearchResult{
+            InId : inId,
+            OutId : outId,
+            Weight : weight})
+
+        if allfinish {
+            break
+        }
+    }
+
+    // 结果过滤
+    err = this.strategy.Filt(queryInfo,result)
+    if err != nil {
+    }
+
+    // 调权
+    err = this.strategy.Adjust(queryInfo,result,this.db)
+    if err != nil {
+    }
+
+    // 完成
+    err = this.strategy.Response(queryInfo,result,this.db,resbuf)
+    if err != nil {
+    }
 
     return nil
 }
