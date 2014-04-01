@@ -1,7 +1,7 @@
 package goose
 
 import (
-    "github.com/laurent22/toml-go"
+    "github.com/getwe/goose/config"
     . "github.com/getwe/goose/utils"
     . "github.com/getwe/goose/database"
     "runtime"
@@ -13,7 +13,7 @@ import (
 
 // Goose检索程序.核心工作是提供检索服务,同时支持动态插入索引.
 type GooseSearch struct {
-    conf            toml.Document
+    conf            config.Conf
 
     // 支持检索的db,同时提供动态插入索引功能
     searchDB        *DBSearcher
@@ -29,24 +29,24 @@ type GooseSearch struct {
 func (this *GooseSearch) Run() error {
 
     // read conf
-    searchGoroutineNum := this.conf.GetInt("GooseSearch.Search.GoroutineNum")
-    searchSvrPort := this.conf.GetInt("GooseSearch.Search.ServerPort")
-    indexSvrPort := this.conf.GetInt("GooseSearch.Index.ServerPort")
+    searchGoroutineNum := this.conf.Int64("GooseSearch.Search.GoroutineNum")
+    searchSvrPort := this.conf.Int64("GooseSearch.Search.ServerPort")
+    indexSvrPort := this.conf.Int64("GooseSearch.Index.ServerPort")
 
-    searchReqBufSize := this.conf.GetInt("GooseSearch.Search.RequestBufferSize")
-    searchResBufSize := this.conf.GetInt("GooseSearch.Search.ResponseBufferSize")
+    searchReqBufSize := this.conf.Int64("GooseSearch.Search.RequestBufferSize")
+    searchResBufSize := this.conf.Int64("GooseSearch.Search.ResponseBufferSize")
 
-    indexReqBufSize := this.conf.GetInt("GooseSearch.Index.RequestBufferSize")
+    indexReqBufSize := this.conf.Int64("GooseSearch.Index.RequestBufferSize")
     //indexResBufSize := this.conf.GetInt("GooseSearch.Index.ResponseBufferSize")
 
 
-    err := this.runSearchServer(searchGoroutineNum,searchSvrPort,searchReqBufSize,
-        searchResBufSize)
+    err := this.runSearchServer(int(searchGoroutineNum),int(searchSvrPort),
+        int(searchReqBufSize),int(searchResBufSize))
     if err != nil {
         return err
     }
 
-    err = this.runIndexServer(indexSvrPort,indexReqBufSize)
+    err = this.runIndexServer(int(indexSvrPort),int(indexReqBufSize))
     if err != nil {
         return err
     }
@@ -165,18 +165,20 @@ func (this *GooseSearch) Init(confPath string,
     }()
 
     // load conf
-    var parser toml.Parser
-    this.conf = parser.ParseFile(confPath)
+    this.conf,err = config.NewConf(confPath)
+    if err != nil {
+        return
+    }
 
     // set max procs
-    maxProcs := this.conf.GetInt("GooseSearch.MaxProcs",0)
+    maxProcs := int(this.conf.Int64("GooseSearch.MaxProcs"))
     if maxProcs <= 0 {
         maxProcs = runtime.NumCPU()
     }
     runtime.GOMAXPROCS(maxProcs)
 
     // init dbsearcher
-    dbPath := this.conf.GetString("GooseBuild.DataBase.DbPath")
+    dbPath := this.conf.String("GooseBuild.DataBase.DbPath")
 
     this.searchDB = NewDBSearcher()
     err = this.searchDB.Init(dbPath)

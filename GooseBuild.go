@@ -1,7 +1,7 @@
 package goose
 
 import (
-    "github.com/laurent22/toml-go"
+    "github.com/getwe/goose/config"
     . "github.com/getwe/goose/utils"
     . "github.com/getwe/goose/database"
     "os"
@@ -11,7 +11,7 @@ import (
 
 // Goose的静态库生成程序.
 type GooseBuild struct {
-    conf            toml.Document
+    conf            config.Conf
 
     staticDB        *DBBuilder
 
@@ -53,26 +53,28 @@ func (this *GooseBuild) Init(confPath string,indexSty IndexStrategy,toIndexFile 
     }()
 
     // load conf
-    var parser toml.Parser
-    this.conf = parser.ParseFile(confPath)
+    this.conf,err = config.NewConf(confPath)
+    if err != nil {
+        return
+    }
 
     // set max procs
-    maxProcs := this.conf.GetInt("GooseBuild.MaxProcs",0)
+    maxProcs := int(this.conf.Int64("GooseBuild.MaxProcs"))
     if maxProcs <= 0 {
         maxProcs = runtime.NumCPU()
     }
     runtime.GOMAXPROCS(maxProcs)
 
     // init dbbuilder
-    dbPath := this.conf.GetString("GooseBuild.DataBase.DbPath")
-    transformMaxTermCnt := this.conf.GetInt("GooseBuild.DataBase.TransformMaxTermCnt")
-    maxId := this.conf.GetInt("GooseBuild.DataBase.MaxId")
-    maxIndexFileSize := this.conf.GetInt("GooseBuild.DataBase.MaxIndexFileSize")
-    maxDataFileSize := this.conf.GetInt("GooseBuild.DataBase.MaxDataFileSize")
-    valueSize := this.conf.GetInt("GooseBuild.DataBase.ValueSize")
+    dbPath := this.conf.String("GooseBuild.DataBase.DbPath")
+    transformMaxTermCnt := this.conf.Int64("GooseBuild.DataBase.TransformMaxTermCnt")
+    maxId := this.conf.Int64("GooseBuild.DataBase.MaxId")
+    maxIndexFileSize := this.conf.Int64("GooseBuild.DataBase.MaxIndexFileSize")
+    maxDataFileSize := this.conf.Int64("GooseBuild.DataBase.MaxDataFileSize")
+    valueSize := this.conf.Int64("GooseBuild.DataBase.ValueSize")
 
     this.staticDB = NewDBBuilder()
-    err = this.staticDB.Init(dbPath,transformMaxTermCnt,InIdType(maxId),
+    err = this.staticDB.Init(dbPath,int(transformMaxTermCnt),InIdType(maxId),
         uint32(valueSize),uint32(maxIndexFileSize),uint32(maxDataFileSize))
     if err != nil {
         return

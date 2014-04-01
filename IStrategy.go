@@ -3,14 +3,14 @@ package goose
 import (
     . "github.com/getwe/goose/utils"
     . "github.com/getwe/goose/database"
-    "github.com/laurent22/toml-go"
+    "github.com/getwe/goose/config"
 )
 
 // 建索引策略.
 // 框架会调用一次Init接口进行初始化,建索引的时候会N个goroutine调用ParseDoc
 type IndexStrategy interface {
     // 全局初始化的接口
-    Init(conf toml.Document) (error)
+    Init(conf config.Conf) (error)
 
     // 分析一个doc,返回其中的term列表,Value,Data
     ParseDoc(doc interface{}) (OutIdType,[]TermInDoc,*Value,*Data,error)
@@ -18,7 +18,7 @@ type IndexStrategy interface {
 
 type SearchStrategy interface {
     // 全局初始化的接口
-    Init(conf toml.Document) (error)
+    Init(conf config.Conf) (error)
 
     // 解析请求
     // 返回term列表,一个由策略决定的任意数据,后续接口都会透传
