@@ -9,6 +9,7 @@ type Conf interface {
     String(key string) string
     Int64(key string) int64
     Float64(key string) float64
+    Bool(key string) bool
 }
 
 type confParser interface{

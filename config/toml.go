@@ -21,6 +21,10 @@ func (this *TomlConf) Float64(key string) float64 {
     return this.conf.GetFloat64(key)
 }
 
+func (this *TomlConf) Bool(key string) bool {
+    return this.conf.GetBool(key)
+}
+
 type tomlConfParser struct {
 }
 
