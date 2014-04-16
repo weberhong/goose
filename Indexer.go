@@ -5,7 +5,7 @@ import (
     . "github.com/getwe/goose/database"
     "sync"
     "runtime"
-    log "github.com/alecthomas/log4go"
+    log "github.com/getwe/goose/log"
 )
 
 type DocIterator interface {
@@ -87,17 +87,22 @@ func (this *StaticIndexer) BuildIndex(iter DocIterator) (error) {
 
 func (this *StaticIndexer) parseDoc(){
 
+    // context
+    context := NewStyContext()
+
     // 一直从chan中获取doc,直到这个chan被close
     for doc := range this.parseDocChan {
         var err error
         // parse
         parseRes := &docParsed{}
         parseRes.outId,parseRes.termList,parseRes.value,parseRes.data,
-        err = this.strategy.ParseDoc(doc)
+        err = this.strategy.ParseDoc(doc,context)
         if err != nil {
             log.Error(err)
             parseRes = nil
         }
+        // 打印策略日志
+        context.log.PrintAllInfo()
 
         // toWriteDbQueue是待写入db的队列.
         // 阻塞等待队列有空余位置然后写入队列.
@@ -187,16 +192,24 @@ func (this *VarIndexer) BuildIndex(iter DocIterator) (error) {
     this.lock.Lock()
     defer this.lock.Unlock()
 
+    context := NewStyContext()
+
     oneDoc := iter.NextDoc()
     for ;oneDoc != nil;oneDoc = iter.NextDoc() {
+
+        context.Clear()
+
         var err error
         // parse
         parseRes := &docParsed{}
         parseRes.outId,parseRes.termList,parseRes.value,parseRes.data,
-        err = this.strategy.ParseDoc(oneDoc)
+        err = this.strategy.ParseDoc(oneDoc,context)
         if err != nil {
             return err
         }
+
+        // 打一行策略的所有日志
+        context.log.PrintAllInfo()
 
         // id
         inId,err := this.db.AllocID(parseRes.outId)

@@ -4,7 +4,33 @@ import (
     . "github.com/getwe/goose/utils"
     . "github.com/getwe/goose/database"
     "github.com/getwe/goose/config"
+    log "github.com/getwe/goose/log"
 )
+
+type StyContext struct {
+    // 供策略打日志使用
+    log     *log.GooseLogger
+}
+
+// 创建新的
+func NewStyContext() (*StyContext) {
+    c := StyContext{}
+    c.log = log.NewGooseLogger()
+    return &c
+}
+// 克隆,能复用的尽量复用
+func (this *StyContext) Clone() (*StyContext) {
+    newc := StyContext{}
+    // log不能复用(没必要复用)
+    newc.log = log.NewGooseLogger()
+    // 其它
+
+    return &newc
+}
+// 重置后可以重用
+func (this *StyContext) Clear() {
+    this.log = log.NewGooseLogger()
+}
 
 // 建索引策略.
 // 框架会调用一次Init接口进行初始化,建索引的时候会N个goroutine调用ParseDoc
@@ -13,7 +39,7 @@ type IndexStrategy interface {
     Init(conf config.Conf) (error)
 
     // 分析一个doc,返回其中的term列表,Value,Data
-    ParseDoc(doc interface{}) (OutIdType,[]TermInDoc,*Value,*Data,error)
+    ParseDoc(doc interface{},context *StyContext) (OutIdType,[]TermInDoc,*Value,*Data,error)
 }
 
 type SearchStrategy interface {
@@ -22,7 +48,7 @@ type SearchStrategy interface {
 
     // 解析请求
     // 返回term列表,一个由策略决定的任意数据,后续接口都会透传
-    ParseQuery(request []byte)([]TermInQuery,interface{},error)
+    ParseQuery(request []byte,context *StyContext)([]TermInQuery,interface{},error)
 
     // 对一个结果进行打分,确定相关性
     // queryInfo    : ParseQuery策略返回的结构
@@ -36,18 +62,18 @@ type SearchStrategy interface {
     // @NOTE query中的term不一定能命中doc,TermInDoc.Weight == 0表示这种情况
     CalWeight(queryInfo interface{},inId InIdType,outId OutIdType,
         termInQuery []TermInQuery,termInDoc []TermInDoc,
-        termCnt uint32) (TermWeight,error)
+        termCnt uint32,context *StyContext) (TermWeight,error)
 
     // 对结果拉链进行过滤
-    Filt(queryInfo interface{},list SearchResultList) (error)
+    Filt(queryInfo interface{},list SearchResultList,context *StyContext) (error)
 
     // 结果调权
     // 确认最终结果列表排序
-    Adjust(queryInfo interface{},list SearchResultList,db ValueReader) (error)
+    Adjust(queryInfo interface{},list SearchResultList,db ValueReader,context *StyContext) (error)
 
     // 构建返回包
     Response(queryInfo interface{},list SearchResultList,
-        db DataBaseReader,response []byte) (err error)
+        db DataBaseReader,response []byte,context *StyContext) (err error)
 
 }
 

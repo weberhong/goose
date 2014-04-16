@@ -19,6 +19,7 @@ type GooseBuild struct {
 
     fileHd          *os.File
     fileIter        *FileIter
+
 }
 
 

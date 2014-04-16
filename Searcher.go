@@ -16,8 +16,10 @@ type Searcher struct {
 func (this *Searcher) Search(reqbuf []byte,resbuf []byte) (err error) {
     where := "Searcher.Search"
 
+    context := NewStyContext()
+
     // 解析请求
-    termInQList,queryInfo,err := this.strategy.ParseQuery(reqbuf)
+    termInQList,queryInfo,err := this.strategy.ParseQuery(reqbuf,context)
     if err != nil {
         return NewGooseError(where,"parsequery fail",err.Error())
     }
@@ -43,7 +45,7 @@ func (this *Searcher) Search(reqbuf []byte,resbuf []byte) (err error) {
         }
 
         weight,err := this.strategy.CalWeight(queryInfo,inId,outId,
-            termInQList,termInDocList,uint32(len(termInQList)))
+            termInQList,termInDocList,uint32(len(termInQList)),context)
         if err != nil {
             continue
         }
@@ -59,19 +61,21 @@ func (this *Searcher) Search(reqbuf []byte,resbuf []byte) (err error) {
     }
 
     // 结果过滤
-    err = this.strategy.Filt(queryInfo,result)
+    err = this.strategy.Filt(queryInfo,result,context)
     if err != nil {
     }
 
     // 调权
-    err = this.strategy.Adjust(queryInfo,result,this.db)
+    err = this.strategy.Adjust(queryInfo,result,this.db,context)
     if err != nil {
     }
 
     // 完成
-    err = this.strategy.Response(queryInfo,result,this.db,resbuf)
+    err = this.strategy.Response(queryInfo,result,this.db,resbuf,context)
     if err != nil {
     }
+
+    context.log.PrintAllInfo()
 
     return nil
 }
