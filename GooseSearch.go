@@ -5,7 +5,7 @@ import (
     . "github.com/getwe/goose/utils"
     . "github.com/getwe/goose/database"
     "runtime"
-    log "github.com/alecthomas/log4go"
+    log "github.com/getwe/goose/log"
     "net"
     "fmt"
     "sync"
@@ -79,29 +79,33 @@ func (this *GooseSearch) runSearchServer(routineNum int,listenPort int,
                 resbuf = resbuf[:0]
 
                 conn,err := listener.Accept()
-                defer conn.Close()
                 if err != nil {
                     log.Warn("SearchServer accept fail : %s",err.Error())
-                    continue
+                    goto LabelError
                 }
                 // receive data
                 _,err = conn.Read(reqbuf)
                 if err != nil {
                     log.Warn("SearchServer read fail : %s",err.Error())
-                    continue
+                    goto LabelError
                 }
 
                 // do search
                 err = this.searcher.Search(reqbuf,resbuf)
                 if err != nil {
                     log.Warn("SearchServer Search fail : %s",err.Error())
+                    goto LabelError
                 }
 
                 // write data
                 _,err = conn.Write(resbuf)
                 if err != nil {
                     log.Warn("SearchServer conn write fail : %s",err.Error())
+                    goto LabelError
                 }
+
+                LabelError:
+                conn.Close()
             }
         }()
     }
@@ -125,28 +129,27 @@ func (this *GooseSearch) runIndexServer(listenPort int,requestBufSize int) error
         reqbuf := make([]byte,requestBufSize)
         for {
             conn,err := listener.Accept()
-            defer conn.Close()
             if err != nil {
                 log.Warn("IndexServer accept fail : %s",err.Error())
-                continue
+                goto LabelError
             }
 
             // receive data
             _,err = conn.Read(reqbuf)
             if err != nil {
                 log.Warn("IndexSearcher read fail : %s",err.Error())
-                continue
+                goto LabelError
             }
 
             // index
             err = this.varIndexer.BuildIndex(NewBufferIterOnce(reqbuf))
             if err != nil {
                 log.Warn("IndexSearcher BuildIndex fail : %s",err.Error())
-                continue
+                goto LabelError
             }
 
-            // write response
-            // conn.Write([]byte("Build Index Done"))
+            LabelError:
+            conn.Close()
         }
     }()
 

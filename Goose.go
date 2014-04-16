@@ -4,7 +4,7 @@ import (
     "fmt"
     "os"
     flags "github.com/jessevdk/go-flags"
-    log "github.com/alecthomas/log4go"
+    log "github.com/getwe/goose/log"
     "time"
 )
 
@@ -72,7 +72,7 @@ func (this *Goose) Run() {
 
     // init log
     log.LoadConfiguration(this.logConfPath)
-    log.Info("Load log conf finish")
+    log.Debug("Load log conf finish")
 
     // run 
     if opts.BuildMode {
@@ -91,7 +91,7 @@ func (this *Goose) Run() {
 func (this *Goose) buildModeRun() {
 
     if this.indexSty == nil {
-        log.Critical("Please set index strategy,see Goose.SetIndexStrategy()")
+        log.Error("Please set index strategy,see Goose.SetIndexStrategy()")
         return
     }
 
@@ -115,7 +115,7 @@ func (this *Goose) buildModeRun() {
 func (this *Goose) searchModeRun() {
 
     if this.searchSty == nil {
-        log.Critical("Please set search strategy,see Goose.SetSearchStrategy()")
+        log.Error("Please set search strategy,see Goose.SetSearchStrategy()")
         return
     }
 
