@@ -38,7 +38,14 @@ func (GooseLogger) Debug(arg0 interface{}, args ...interface{}) error {
     return nil
 }
 
-// Info日志先存起来
+
+// 直接使用Info日志,马上打印一行
+func Info(arg0 interface{}, args ...interface{}) error {
+    infoLogger.Info(arg0,args)
+    return nil
+}
+
+// Info日志先存起来,调用PrintAllInfo的时候输出日志
 func (this *GooseLogger) Info(format string, args ...interface{}) error {
     this.logstr = append(this.logstr,fmt.Sprintf(format,args...))
     return nil
