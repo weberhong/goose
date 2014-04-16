@@ -9,27 +9,27 @@ import (
 
 type StyContext struct {
     // 供策略打日志使用
-    log     *log.GooseLogger
+    Log     *log.GooseLogger
 }
 
 // 创建新的
 func NewStyContext() (*StyContext) {
     c := StyContext{}
-    c.log = log.NewGooseLogger()
+    c.Log = log.NewGooseLogger()
     return &c
 }
 // 克隆,能复用的尽量复用
 func (this *StyContext) Clone() (*StyContext) {
     newc := StyContext{}
     // log不能复用(没必要复用)
-    newc.log = log.NewGooseLogger()
+    newc.Log = log.NewGooseLogger()
     // 其它
 
     return &newc
 }
 // 重置后可以重用
 func (this *StyContext) Clear() {
-    this.log = log.NewGooseLogger()
+    this.Log = log.NewGooseLogger()
 }
 
 // 建索引策略.

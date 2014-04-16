@@ -102,7 +102,7 @@ func (this *StaticIndexer) parseDoc(){
             parseRes = nil
         }
         // 打印策略日志
-        context.log.PrintAllInfo()
+        context.Log.PrintAllInfo()
 
         // toWriteDbQueue是待写入db的队列.
         // 阻塞等待队列有空余位置然后写入队列.
@@ -209,7 +209,7 @@ func (this *VarIndexer) BuildIndex(iter DocIterator) (error) {
         }
 
         // 打一行策略的所有日志
-        context.log.PrintAllInfo()
+        context.Log.PrintAllInfo()
 
         // id
         inId,err := this.db.AllocID(parseRes.outId)

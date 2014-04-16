@@ -75,7 +75,7 @@ func (this *Searcher) Search(reqbuf []byte,resbuf []byte) (err error) {
     if err != nil {
     }
 
-    context.log.PrintAllInfo()
+    context.Log.PrintAllInfo()
 
     return nil
 }
