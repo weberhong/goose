@@ -17,8 +17,8 @@ type DocIterator interface {
 type docParsed struct {
     outId OutIdType
     termList []TermInDoc
-    value *Value
-    data *Data
+    value Value
+    data Data
 }
 
 // 静态索引生成类.
@@ -138,7 +138,7 @@ func (this *StaticIndexer) writeDoc() {
         }
 
         // value
-        err = this.db.WriteValue(inId,*(parseRes.value))
+        err = this.db.WriteValue(inId,parseRes.value)
         if err != nil {
             log.Error(err)
             this.finishedWg.Done()
@@ -146,7 +146,7 @@ func (this *StaticIndexer) writeDoc() {
         }
 
         // data
-        err = this.db.WriteData(inId,*(parseRes.data))
+        err = this.db.WriteData(inId,parseRes.data)
         if err != nil {
             log.Error(err)
             this.finishedWg.Done()
@@ -224,13 +224,13 @@ func (this *VarIndexer) BuildIndex(iter DocIterator) (error) {
         }
 
         // value
-        err = this.db.WriteValue(inId,*(parseRes.value))
+        err = this.db.WriteValue(inId,parseRes.value)
         if err != nil {
             return err
         }
 
         // data
-        err = this.db.WriteData(inId,*(parseRes.data))
+        err = this.db.WriteData(inId,parseRes.data)
         if err != nil {
             return err
         }

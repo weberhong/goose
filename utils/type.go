@@ -42,7 +42,7 @@ type Index struct {
 // 全文数据
 type Data []byte
 // NewData(length,capacity)
-func NewData(arg ...int) (*Data) {
+func NewData(arg ...int) (Data) {
     var v Data
     if len(arg) == 0 {
         v = make([]byte,0)
@@ -51,7 +51,11 @@ func NewData(arg ...int) (*Data) {
     } else {
         v = make([]byte,arg[0],arg[1])
     }
-    return &v
+    return v
+}
+
+func (this *Data) Len() int {
+    return len(*this)
 }
 
 
@@ -59,7 +63,7 @@ func NewData(arg ...int) (*Data) {
 type Value []byte
 
 // NewValue(length,capacity)
-func NewValue(arg ...int) (*Value) {
+func NewValue(arg ...int) (Value) {
     var v Value
     if len(arg) == 0 {
         v = make([]byte,0)
@@ -68,7 +72,7 @@ func NewValue(arg ...int) (*Value) {
     } else {
         v = make([]byte,arg[0],arg[1])
     }
-    return &v
+    return v
 }
 
 // term在doc中的信息
@@ -101,6 +105,17 @@ type SearchResult struct {
 }
 // 结果拉链
 type SearchResultList []SearchResult
+
+// 支持sort包的排序
+func (s SearchResultList) Len() int {return len(s)}
+func (s SearchResultList) Less(i,j int) bool {
+    if s[i].Weight > s[j].Weight {
+        return true
+    }
+    return s[i].InId < s[j].InId
+}
+func (s SearchResultList) Swap(i,j int) {s[i],s[j] = s[j],s[i]}
+
 
 //GooseError : 简单的错误日志
 type GooseError struct {

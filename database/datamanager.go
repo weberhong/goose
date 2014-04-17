@@ -169,10 +169,8 @@ func (this *DataManager) ReadData(inId InIdType,buf *Data) (error) {
 
 
     // 读二级索引
-    if bigFileI.Length > uint32(len(*buf)) {
-        // BUG(honggengwei) 最初Data就是一个[]byte,以后如果改成其它结构,那就不对了
-        // buf的空间大小应该是由其自身封装的方法比较好
-        *buf = make([]byte,bigFileI.Length)
+    if bigFileI.Length > uint32(buf.Len()) {
+        *buf = NewData(int(bigFileI.Length))
     }
     err = this.data1.Read(bigFileI,*buf)
     if err != nil {

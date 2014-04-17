@@ -39,7 +39,7 @@ type IndexStrategy interface {
     Init(conf config.Conf) (error)
 
     // 分析一个doc,返回其中的term列表,Value,Data
-    ParseDoc(doc interface{},context *StyContext) (OutIdType,[]TermInDoc,*Value,*Data,error)
+    ParseDoc(doc interface{},context *StyContext) (OutIdType,[]TermInDoc,Value,Data,error)
 }
 
 type SearchStrategy interface {
