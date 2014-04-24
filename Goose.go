@@ -50,7 +50,7 @@ func (this *Goose) Run() {
         Configure string `short:"c" long:"conf" description:"congfigure file" default:"conf/goose.toml"`
 
         // log configure file
-        LogConf   string `short:"l" long:"logconf" description:"log congfigure file" default:"conf/log.xml"`
+        LogConf   string `short:"l" long:"logconf" description:"log congfigure file" default:"conf/log.toml"`
 
         // build mode data file
         DataFile string `short:"d" long:"datafile" description:"build mode data file"`
@@ -71,7 +71,11 @@ func (this *Goose) Run() {
     this.logConfPath = opts.LogConf
 
     // init log
-    log.LoadConfiguration(this.logConfPath)
+    err = log.LoadConfiguration(this.logConfPath)
+    if err != nil {
+        fmt.Println(err)
+        os.Exit(1)
+    }
     log.Debug("Load log conf finish")
 
     // run 
@@ -113,6 +117,8 @@ func (this *Goose) buildModeRun() {
 
 // 检索模式运行
 func (this *Goose) searchModeRun() {
+
+    log.Debug("run in search mode")
 
     if this.searchSty == nil {
         log.Error("Please set search strategy,see Goose.SetSearchStrategy()")

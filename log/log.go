@@ -18,15 +18,16 @@ var (
 )
 
 func init() {
-    debugLogger = log4go.NewDefaultLogger(log4go.DEBUG)
-    infoLogger  = log4go.NewDefaultLogger(log4go.INFO)
-    errorLogger = log4go.NewDefaultLogger(log4go.WARNING)
+    debugLogger = make(log4go.Logger)
+    infoLogger  = make(log4go.Logger)
+    errorLogger = make(log4go.Logger)
 }
 
 
 func newFileFilter(file string) (*log4go.FileLogWriter) {
 	flw := log4go.NewFileLogWriter(file, false)
-	flw.SetFormat("[%D %T] [%L] (%S) %M")
+	//flw.SetFormat("[%D %T] [%L] (%S) %M")
+	flw.SetFormat("[%D %T] [%L] %M")
 	flw.SetRotateLines(0)
 	flw.SetRotateSize(0)
 	flw.SetRotateDaily(false)
