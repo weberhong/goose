@@ -43,5 +43,9 @@ func (this *tomlConfParser) Parse(file string) (c Conf,err error) {
 }
 
 func init() {
-    register(".toml",&tomlConfParser{})
+    //github.com/laurent22/toml-go
+    //在语法有错误的情况下会陷入死循环
+    //https://github.com/laurent22/toml-go/issues/2
+    //使用其它toml解析库替代
+    //register(".toml",&tomlConfParser{})
 }

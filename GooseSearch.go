@@ -29,6 +29,8 @@ type GooseSearch struct {
 func (this *GooseSearch) Run() error {
 
     // read conf
+    log.Debug("GooseSearch Run begin")
+
     searchGoroutineNum := this.conf.Int64("GooseSearch.Search.GoroutineNum")
     searchSvrPort := this.conf.Int64("GooseSearch.Search.ServerPort")
     indexSvrPort := this.conf.Int64("GooseSearch.Index.ServerPort")
@@ -39,6 +41,10 @@ func (this *GooseSearch) Run() error {
     indexReqBufSize := this.conf.Int64("GooseSearch.Index.RequestBufferSize")
     //indexResBufSize := this.conf.GetInt("GooseSearch.Index.ResponseBufferSize")
 
+    log.Debug("Read Conf searchGoroutineNum[%d] searchSvrPort[%d] " +
+        "indexSvrPort[%d] searchReqBufSize[%d] searchResBufSize[%d] " +
+        "indexReqBufSize[%d]",searchGoroutineNum,searchSvrPort,indexSvrPort,
+        searchReqBufSize,searchResBufSize,indexReqBufSize)
 
     err := this.runSearchServer(int(searchGoroutineNum),int(searchSvrPort),
         int(searchReqBufSize),int(searchResBufSize))
@@ -60,6 +66,12 @@ func (this *GooseSearch) Run() error {
 
 func (this *GooseSearch) runSearchServer(routineNum int,listenPort int,
     requestBufSize int,responseBufSize int) error {
+
+    if 0 == routineNum || 0 == listenPort || 0 == requestBufSize || 0 == responseBufSize {
+        return log.Error("arg error routineNum[%d] listenPort[%d] " +
+            "requestBufSize[%d] responseBufSize[%d]",routineNum,listenPort,
+            requestBufSize,responseBufSize)
+    }
 
     listener,err := net.Listen("tcp",fmt.Sprintf("localhost:%d",listenPort))
     if err != nil {
@@ -113,6 +125,12 @@ func (this *GooseSearch) runSearchServer(routineNum int,listenPort int,
 }
 
 func (this *GooseSearch) runIndexServer(listenPort int,requestBufSize int) error {
+
+    if 0 == listenPort || 0 == requestBufSize {
+        return log.Error("arg error istenPort[%d] requestBufSize[%d]",
+            listenPort,requestBufSize)
+    }
+
 
     if this.varIndexer == nil {
         return nil
