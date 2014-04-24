@@ -179,15 +179,18 @@ func (this *GooseSearch) Init(confPath string,
         maxProcs = runtime.NumCPU()
     }
     runtime.GOMAXPROCS(maxProcs)
+    log.Debug("set max procs [%d]",maxProcs)
 
     // init dbsearcher
     dbPath := this.conf.String("GooseBuild.DataBase.DbPath")
+    log.Debug("init db [%s]",dbPath)
 
     this.searchDB = NewDBSearcher()
     err = this.searchDB.Init(dbPath)
     if err != nil {
         return
     }
+    log.Debug("init db [%s]",dbPath)
 
     // index strategy global init
     if indexSty != nil {
@@ -196,6 +199,7 @@ func (this *GooseSearch) Init(confPath string,
             return
         }
     }
+    log.Debug("index strategy init finish")
 
     // search strategy global init
     if searchSty != nil {
@@ -204,6 +208,7 @@ func (this *GooseSearch) Init(confPath string,
             return
         }
     }
+    log.Debug("search strategy init finish")
 
     // var indexer
     if indexSty != nil {
@@ -212,6 +217,7 @@ func (this *GooseSearch) Init(confPath string,
             return
         }
     }
+    log.Debug("VarIndexer init finish")
 
     // searcher
     if searchSty != nil {
@@ -220,6 +226,7 @@ func (this *GooseSearch) Init(confPath string,
             return
         }
     }
+    log.Debug("Searcher init finish")
 
     return
  }

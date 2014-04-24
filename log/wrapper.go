@@ -16,11 +16,7 @@ func NewGooseLogger() (*GooseLogger) {
 
 // Warn日志直接输出
 func _warn(arg0 interface{}, args ...interface{}) error {
-    format,ok := arg0.(string)
-    if ok {
-        return errorLogger.Warn(fmt.Sprintf("%s %s",getLineInfo(3),format),args...)
-    }
-    return nil
+    return errorLogger.Warn(fmt.Sprintf("%s %s",getLineInfo(3),arg0),args...)
 }
 func Warn(arg0 interface{}, args ...interface{}) error {
     return _warn(arg0,args...)
@@ -31,11 +27,7 @@ func (GooseLogger) Warn(arg0 interface{}, args ...interface{}) error {
 
 // Error日志直接输出
 func _error(arg0 interface{}, args ...interface{}) error {
-    format,ok := arg0.(string)
-    if ok {
-        return errorLogger.Error(fmt.Sprintf("%s %s",getLineInfo(3),format),args...)
-    }
-    return nil
+    return errorLogger.Error(fmt.Sprintf("%s %s",getLineInfo(3),arg0),args...)
 }
 func Error(arg0 interface{}, args ...interface{}) error {
     return _error(arg0,args...)
@@ -46,10 +38,7 @@ func (GooseLogger) Error(arg0 interface{}, args ...interface{}) error {
 
 // Debug日志直接输出
 func _debug(arg0 interface{}, args ...interface{}) error {
-    format,ok := arg0.(string)
-    if ok {
-        debugLogger.Debug(fmt.Sprintf("%s %s",getLineInfo(3),format),args...)
-    }
+    debugLogger.Debug(fmt.Sprintf("%s %s",getLineInfo(3),arg0),args...)
     return nil
 }
 func Debug(arg0 interface{}, args ...interface{}) error {
@@ -64,10 +53,7 @@ func (GooseLogger) Debug(arg0 interface{}, args ...interface{}) error {
 
 // 直接使用Info日志,马上打印一行
 func _info(arg0 interface{}, args ...interface{}) error {
-    format,ok := arg0.(string)
-    if ok {
-        infoLogger.Info(fmt.Sprintf("%s %s",getLineInfo(3),format),args...)
-    }
+    infoLogger.Info(fmt.Sprintf("%s %s",getLineInfo(3),arg0),args...)
     return nil
 }
 func Info(arg0 interface{}, args ...interface{}) error {

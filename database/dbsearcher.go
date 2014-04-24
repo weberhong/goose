@@ -110,7 +110,7 @@ func (this *DBSearcher) Init(fPath string) (error) {
     this.filePath = fPath
 
     // data
-    this.dataMgr.Open(this.filePath)
+    err = this.dataMgr.Open(this.filePath)
     if err != nil { return err }
 
     // value

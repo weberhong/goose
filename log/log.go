@@ -64,7 +64,7 @@ func LoadConfiguration(confPath string) (error) {
 
     // error
     error_enable := conf.Bool("error.Enable")
-    error_file := conf.String("info.FileName")
+    error_file := conf.String("error.FileName")
     filt = nil
     if error_enable {
         filt = newFileFilter(error_file)

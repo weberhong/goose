@@ -136,6 +136,8 @@ func (this *Goose) searchModeRun() {
         return
     }
 
+    log.Debug("goose search init succ")
+
     err = gooseSearch.Run()
     if err != nil {
         log.Error(err)
