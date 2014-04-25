@@ -111,6 +111,8 @@ func (s SearchResultList) Len() int {return len(s)}
 func (s SearchResultList) Less(i,j int) bool {
     if s[i].Weight > s[j].Weight {
         return true
+    } else if s[i].Weight < s[j].Weight {
+        return false
     }
     return s[i].InId < s[j].InId
 }

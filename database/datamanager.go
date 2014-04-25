@@ -152,7 +152,7 @@ func (this *DataManager) Append(inId InIdType,d Data) (error) {
 
 // 读取Data数据,可以并发.
 func (this *DataManager) ReadData(inId InIdType,buf *Data) (error) {
-    if inId > this.dataStatus.MaxInId{
+    if inId == 0 || inId > this.dataStatus.MaxInId{
         return NewGooseError("DataManager.Read","inId illegal","")
     }
 

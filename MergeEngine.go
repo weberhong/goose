@@ -4,6 +4,7 @@ import (
 	. "github.com/getwe/goose/database"
 	. "github.com/getwe/goose/utils"
     "container/heap"
+    log "github.com/getwe/goose/log"
 )
 
 type listMinHeapItem struct {
@@ -22,8 +23,13 @@ func (this *listMinHeapItem) Curr() Index {
 
 // 开始遍历下一个元素,如果结束返回false
 func (this *listMinHeapItem) Next() bool {
+    // 后移一个元素
+    this.pos++
+
+    // this.pos == len(*this.list) 表示拉链遍历完
+    // 操作list[pos]是非法的
+
     if this.pos < len(*this.list) {
-        this.pos++
         return true
     }
     return false
@@ -106,6 +112,9 @@ func NewMergeEngine(db DataBaseReader,termList []TermInQuery) (*MergeEngine,erro
         if e.CanOmit == false {
             mg.omitflag ^= 1 << uint(i)
         }
+
+        log.Debug("term[%d] omit[%d] weight[%d] listLen[%d]",item.sign,
+            item.omit,e.Weight,len(*item.list))
     }
 
     return &mg,nil
@@ -114,12 +123,12 @@ func NewMergeEngine(db DataBaseReader,termList []TermInQuery) (*MergeEngine,erro
 func (this *MergeEngine) Next(termInDoclist []TermInDoc) (inId InIdType,currValid,allfinish bool) {
 
     if len(termInDoclist) != this.termCount {
-        // TODO warnning
-        return 0,false,false
+        log.Warn("len(termInDoclist) != this.termCount")
+        return 0,false,true
     }
 
     if this.lstheap.Len() == 0 {
-        return 0,false,false
+        return 0,false,true
     }
 
     // 初始化
@@ -129,6 +138,7 @@ func (this *MergeEngine) Next(termInDoclist []TermInDoc) (inId InIdType,currVali
     }
     oflag := 0
 
+    /*
     // 先看当前id最小的堆顶
     item := this.lstheap.Pop().(listMinHeapItem)
     currInID := item.Curr().InID
@@ -137,13 +147,19 @@ func (this *MergeEngine) Next(termInDoclist []TermInDoc) (inId InIdType,currVali
     termInDoclist[ item.no ].Sign = item.sign
     termInDoclist[ item.no ].Weight = item.Curr().Weight
     oflag ^= item.omit
+    */
+
+    top := this.lstheap.Top().(listMinHeapItem)
+    currInID := top.Curr().InID
 
     allfinish = false
 
     for this.lstheap.Len() > 0 {
         top := this.lstheap.Top().(listMinHeapItem)
+
         if top.Curr().InID != currInID {
-            // 归并完一个doc
+            // 遇到新的doc了,就是归并完一个doc
+            // 跳出去校验currInID的命中情况
             break
         }
 
@@ -165,10 +181,6 @@ func (this *MergeEngine) Next(termInDoclist []TermInDoc) (inId InIdType,currVali
                 allfinish = true
             }
         }
-    }
-
-    if this.lstheap.Len() == 0 {
-        allfinish = true
     }
 
     // 检查不可省term是否有全部命中

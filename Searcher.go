@@ -28,23 +28,37 @@ func (this *Searcher) Search(context *StyContext,reqbuf []byte,resbuf []byte) (e
         return NewGooseError(where,err.Error(),"")
     }
 
-    result := make([]SearchResult,GOOSE_DEFAULT_SEARCH_RESULT_CAPACITY)
+    result := make([]SearchResult,0,GOOSE_DEFAULT_SEARCH_RESULT_CAPACITY)
 
+    // term命中doc的情况
     termInDocList := make([]TermInDoc,len(termInQList))
-    for {
-        inId,currValid,allfinish := me.Next(termInDocList); 
+    var allfinish bool = false
+
+    for allfinish != true {
+        var inId InIdType
+        var currValid bool
+
+        inId,currValid,allfinish = me.Next(termInDocList)
         if currValid != true {
+            context.Log.Debug("merge doc invalid InId[%d]",inId)
             continue
         }
 
         outId,err := this.db.GetOutID(inId)
         if err != nil {
+            context.Log.Warn("GetOutId fail [%s] InId[%d] OutId[%d]",err,inId,outId)
+            continue
+        }
+
+        if inId == 0 || outId == 0 {
+            context.Log.Warn("MergeEngine get illeagl doc InId[%d] OutId[%d]",inId,outId)
             continue
         }
 
         weight,err := this.strategy.CalWeight(queryInfo,inId,outId,
             termInQList,termInDocList,uint32(len(termInQList)),context)
         if err != nil {
+            context.Log.Warn("CalWeight fail %s",err)
             continue
         }
 
@@ -53,9 +67,6 @@ func (this *Searcher) Search(context *StyContext,reqbuf []byte,resbuf []byte) (e
             OutId : outId,
             Weight : weight})
 
-        if allfinish {
-            break
-        }
     }
 
     // 结果过滤

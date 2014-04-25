@@ -14,6 +14,9 @@ const (
 
 // id磁盘数据文件自描述所需的字段
 type IdManagerStatus struct {
+    // 当前未分配id
+    CurId           InIdType
+
     // 最大id
     MaxInId             InIdType
  }
@@ -25,8 +28,6 @@ type IdManagerStatus struct {
 type IdManager struct {
     JsonStatusFile
 
-    // 当前未分配id
-    curId           InIdType
     // 磁盘存储目录
     filePath        string
     // 磁盘同步操作锁
@@ -69,7 +70,8 @@ func (this *IdManager) Init(path string,maxId InIdType) (error) {
     this.lock.Lock()
     defer this.lock.Unlock()
 
-    this.curId = 0
+    // 内部id为0认为非法
+    this.idStatus.CurId = 1
     this.filePath = path
 
     this.idStatus.MaxInId = maxId
@@ -91,6 +93,8 @@ func (this *IdManager) Sync() (error) {
     this.lock.Lock()
     defer this.lock.Unlock()
 
+    this.SaveJsonFile()
+
     err := this.mfile.Flush()
     return err
 }
@@ -98,6 +102,8 @@ func (this *IdManager) Sync() (error) {
 func (this *IdManager) Close() (error) {
     this.lock.Lock()
     defer this.lock.Unlock()
+
+    this.SaveJsonFile()
 
     return this.mfile.Close()
 }
@@ -112,11 +118,11 @@ func (this *IdManager) AllocID(outId OutIdType) (InIdType,error) {
         return 0,NewGooseError("AllocID","illegal outId","")
     }
 
-    if this.curId >= this.idStatus.MaxInId{
+    if this.idStatus.CurId >= this.idStatus.MaxInId{
         return 0,NewGooseError("AllocID","id count limit","")
     }
 
-    inID := this.curId
+    inID := this.idStatus.CurId
 
     // 分配信息,写入mmap
     offset := inID * idSize
@@ -126,7 +132,7 @@ func (this *IdManager) AllocID(outId OutIdType) (InIdType,error) {
     }
 
     // 确认分配成功才真正占用这个id
-    this.curId++
+    this.idStatus.CurId++
 
     return inID,nil
 }
