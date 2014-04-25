@@ -1,4 +1,5 @@
 package config
+/*
 
 import (
     "github.com/kolo/toml.go"
@@ -49,5 +50,11 @@ func (this *tomlConfParser_kolo) Parse(file string) (c Conf,err error) {
 }
 
 func init() {
+    // github.com/kolo/toml.go 模块名字取的不好
+    // go get github.com/kolo/toml.go 经常失败
+    // 原因见
+    // https://groups.google.com/d/msg/golang-nuts/dnOK9j5Fvn4/_WoJt4IekoYJ
+    // 使用其它toml解析库替代
     register(".toml",&tomlConfParser_kolo{})
 }
+*/
