@@ -62,8 +62,24 @@ func Info(arg0 interface{}, args ...interface{}) error {
 }
 
 // Info日志先存起来,调用PrintAllInfo的时候输出日志
-func (this *GooseLogger) Info(format string, args ...interface{}) error {
-    this.logstr = append(this.logstr,fmt.Sprintf(format,args...))
+// 支持日常用法
+// Info(object,xxx) : 输出一个对象的字符串化表示,忽略后面的参数
+// Info(string) : 直接输出
+// Info(strA,strB) : 输出strA:strB
+// Info(strA,object) : 输出strA : object.string()
+func (this *GooseLogger) Info(arg ...interface{}) error {
+
+    var result string
+
+    if len(arg) <= 1 {
+        result = fmt.Sprintf("%s",arg)
+    } else if len(arg) == 2 {
+        result = fmt.Sprint(arg[0]) + ":" + fmt.Sprint(arg[1])
+    } else {
+        result = fmt.Sprint(arg[0]) + ":" + fmt.Sprint(arg[1:])
+    }
+
+    this.logstr = append(this.logstr,result)
     return nil
 }
 

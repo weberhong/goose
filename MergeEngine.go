@@ -167,6 +167,10 @@ func (this *MergeEngine) Next(termInDoclist []TermInDoc) (inId InIdType,currVali
         }
     }
 
+    if this.lstheap.Len() == 0 {
+        allfinish = true
+    }
+
     // 检查不可省term是否有全部命中
     if oflag != this.omitflag {
         // 这次归并得到的doc没有用,丢掉吧

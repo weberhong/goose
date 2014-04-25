@@ -13,10 +13,8 @@ type Searcher struct {
     strategy SearchStrategy
 }
 
-func (this *Searcher) Search(reqbuf []byte,resbuf []byte) (err error) {
+func (this *Searcher) Search(context *StyContext,reqbuf []byte,resbuf []byte) (err error) {
     where := "Searcher.Search"
-
-    context := NewStyContext()
 
     // 解析请求
     termInQList,queryInfo,err := this.strategy.ParseQuery(reqbuf,context)
@@ -74,8 +72,6 @@ func (this *Searcher) Search(reqbuf []byte,resbuf []byte) (err error) {
     err = this.strategy.Response(queryInfo,result,this.db,resbuf,context)
     if err != nil {
     }
-
-    context.Log.PrintAllInfo()
 
     return nil
 }

@@ -57,5 +57,9 @@ func FileSize(f *os.File) (int64,error) {
     return fi.Size(),nil
 }
 
+func Ns2Ms(t int64) int64 {
+    return t/1000000
+}
+
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

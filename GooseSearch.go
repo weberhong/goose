@@ -9,6 +9,7 @@ import (
     "net"
     "fmt"
     "sync"
+    "time"
 )
 
 // Goose检索程序.核心工作是提供检索服务,同时支持动态插入索引.
@@ -83,31 +84,38 @@ func (this *GooseSearch) runSearchServer(routineNum int,listenPort int,
         go func() {
             reqbuf := make([]byte,requestBufSize)
             resbuf := make([]byte,responseBufSize)
+            context := NewStyContext()
 
             for {
 
+                var receLen int
+                var t1,t2 int64
                 // clear buf
-                reqbuf = reqbuf[:0]
-                resbuf = resbuf[:0]
+                context.Clear()
 
                 conn,err := listener.Accept()
                 if err != nil {
                     log.Warn("SearchServer accept fail : %s",err.Error())
                     goto LabelError
                 }
+                context.Log.Info("IP",conn.RemoteAddr().String())
                 // receive data
-                _,err = conn.Read(reqbuf)
+                receLen,err = conn.Read(reqbuf)
                 if err != nil {
-                    log.Warn("SearchServer read fail : %s",err.Error())
+                    log.Warn("SearchServer read fail : %s receive len[%d]",err.Error(),receLen)
                     goto LabelError
                 }
+                context.Log.Info("reqlen",receLen)
 
                 // do search
-                err = this.searcher.Search(reqbuf,resbuf)
+                t1 = time.Now().UnixNano()
+                err = this.searcher.Search(context,reqbuf,resbuf)
+                t2 = time.Now().UnixNano()
                 if err != nil {
                     log.Warn("SearchServer Search fail : %s",err.Error())
                     goto LabelError
                 }
+                context.Log.Info("time(ms)",Ns2Ms(t2-t1))
 
                 // write data
                 _,err = conn.Write(resbuf)
@@ -118,6 +126,7 @@ func (this *GooseSearch) runSearchServer(routineNum int,listenPort int,
 
                 LabelError:
                 conn.Close()
+                context.Log.PrintAllInfo()
             }
         }()
     }
