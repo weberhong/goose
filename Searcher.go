@@ -14,18 +14,17 @@ type Searcher struct {
 }
 
 func (this *Searcher) Search(context *StyContext,reqbuf []byte,resbuf []byte) (err error) {
-    where := "Searcher.Search"
 
     // 解析请求
     termInQList,queryInfo,err := this.strategy.ParseQuery(reqbuf,context)
     if err != nil {
-        return NewGooseError(where,"parsequery fail",err.Error())
+        return err
     }
 
     // 构建查询树
     me,err := NewMergeEngine(this.db,termInQList)
     if err != nil {
-        return NewGooseError(where,err.Error(),"")
+        return err
     }
 
     result := make([]SearchResult,0,GOOSE_DEFAULT_SEARCH_RESULT_CAPACITY)

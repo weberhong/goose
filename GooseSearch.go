@@ -188,9 +188,7 @@ func (this *GooseSearch) Init(confPath string,
 
     defer func() {
         if r := recover();r != nil {
-            log.Error(r)
-            str := r.(string)
-            err = NewGooseError("GooseSearch.Init","Catch Exception",str)
+            err = log.Error(r)
         }
     }()
 

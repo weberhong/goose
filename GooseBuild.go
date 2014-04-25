@@ -47,9 +47,7 @@ func (this *GooseBuild) Run() (err error) {
 func (this *GooseBuild) Init(confPath string,indexSty IndexStrategy,toIndexFile string)(err error) {
     defer func() {
         if r := recover();r != nil {
-            log.Error(r)
-            str := r.(string)
-            err = NewGooseError("GooseBuild.Init","Catch Exception",str)
+            err = log.Error(r)
         }
     }()
 

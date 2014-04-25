@@ -80,7 +80,7 @@ type MergeEngine struct {
 func NewMergeEngine(db DataBaseReader,termList []TermInQuery) (*MergeEngine,error) {
     mg := MergeEngine{}
     if len(termList) >= GOOSE_MAX_QUERY_TERM{
-        return nil,NewGooseError("NewMergeEngine","To much terms","")
+        return nil,log.Warn("to much terms [%d]",len(termList))
     }
 
     mg.omitflag = 0
