@@ -88,7 +88,8 @@ func (this *GooseSearch) runSearchServer(routineNum int,listenPort int,
 
             for {
 
-                var receLen int
+                var reqlen int
+                var reslen  int
                 var t1,t2 int64
                 // clear buf
                 context.Clear()
@@ -100,16 +101,16 @@ func (this *GooseSearch) runSearchServer(routineNum int,listenPort int,
                 }
                 context.Log.Info("IP",conn.RemoteAddr().String())
                 // receive data
-                receLen,err = conn.Read(reqbuf)
+                reqlen,err = conn.Read(reqbuf)
                 if err != nil {
-                    log.Warn("SearchServer read fail : %s receive len[%d]",err.Error(),receLen)
+                    log.Warn("SearchServer read fail : %s receive len[%d]",err.Error(),reqlen)
                     goto LabelError
                 }
-                context.Log.Info("reqlen",receLen)
+                context.Log.Info("reqlen",reqlen)
 
                 // do search
                 t1 = time.Now().UnixNano()
-                err = this.searcher.Search(context,reqbuf,resbuf)
+                reslen,err = this.searcher.Search(context,reqbuf,resbuf)
                 t2 = time.Now().UnixNano()
                 if err != nil {
                     log.Warn("SearchServer Search fail : %s",err.Error())
@@ -118,7 +119,7 @@ func (this *GooseSearch) runSearchServer(routineNum int,listenPort int,
                 context.Log.Info("time(ms)",Ns2Ms(t2-t1))
 
                 // write data
-                _,err = conn.Write(resbuf)
+                _,err = conn.Write(resbuf[:reslen])
                 if err != nil {
                     log.Warn("SearchServer conn write fail : %s",err.Error())
                     goto LabelError

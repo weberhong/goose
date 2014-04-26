@@ -13,18 +13,18 @@ type Searcher struct {
     strategy SearchStrategy
 }
 
-func (this *Searcher) Search(context *StyContext,reqbuf []byte,resbuf []byte) (err error) {
+func (this *Searcher) Search(context *StyContext,reqbuf []byte,resbuf []byte) (reslen int,err error) {
 
     // 解析请求
     termInQList,queryInfo,err := this.strategy.ParseQuery(reqbuf,context)
     if err != nil {
-        return err
+        return 0,err
     }
 
     // 构建查询树
     me,err := NewMergeEngine(this.db,termInQList)
     if err != nil {
-        return err
+        return 0,err
     }
 
     result := make([]SearchResult,0,GOOSE_DEFAULT_SEARCH_RESULT_CAPACITY)
@@ -39,7 +39,6 @@ func (this *Searcher) Search(context *StyContext,reqbuf []byte,resbuf []byte) (e
 
         inId,currValid,allfinish = me.Next(termInDocList)
         if currValid != true {
-            context.Log.Debug("merge doc invalid InId[%d]",inId)
             continue
         }
 
@@ -79,11 +78,11 @@ func (this *Searcher) Search(context *StyContext,reqbuf []byte,resbuf []byte) (e
     }
 
     // 完成
-    err = this.strategy.Response(queryInfo,result,this.db,resbuf,context)
+    reslen,err = this.strategy.Response(queryInfo,result,this.db,resbuf,context)
     if err != nil {
     }
 
-    return nil
+    return reslen,nil
 }
 
 

@@ -73,7 +73,7 @@ type SearchStrategy interface {
 
     // 构建返回包
     Response(queryInfo interface{},list SearchResultList,
-        db DataBaseReader,response []byte,context *StyContext) (err error)
+        db DataBaseReader,response []byte,context *StyContext) (reslen int,err error)
 
 }
 
