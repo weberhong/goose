@@ -66,8 +66,8 @@ func (ih *listMinHeap) Pop() interface{} {
     return item
 }
 
-func (ih *listMinHeap) Top() interface{} {
-    return (*ih)[0]
+func (ih listMinHeap) Top() interface{} {
+    return ih[0]
 }
 
 type MergeEngine struct {
@@ -117,6 +117,8 @@ func NewMergeEngine(db DataBaseReader,termList []TermInQuery) (*MergeEngine,erro
             item.omit,e.Weight,len(*item.list))
     }
 
+    log.Debug("termCnt[%d] omitflag[%d]",mg.termCount,mg.omitflag)
+
     return &mg,nil
 }
 
@@ -152,6 +154,7 @@ func (this *MergeEngine) Next(termInDoclist []TermInDoc) (inId InIdType,currVali
     top := this.lstheap.Top().(listMinHeapItem)
     currInID := top.Curr().InID
 
+    currValid = true
     allfinish = false
 
     for this.lstheap.Len() > 0 {
@@ -164,7 +167,7 @@ func (this *MergeEngine) Next(termInDoclist []TermInDoc) (inId InIdType,currVali
         }
 
         // 堆里面还有相同的doc,先弹出
-        item := this.lstheap.Pop().(listMinHeapItem)
+        item := heap.Pop(this.lstheap).(listMinHeapItem)
 
         // 记下当前doc
         termInDoclist[ item.no ].Sign = item.sign
@@ -179,6 +182,8 @@ func (this *MergeEngine) Next(termInDoclist []TermInDoc) (inId InIdType,currVali
             // 处理完当前doc后后面不需要再归并了
             if item.omit > 0 {
                 allfinish = true
+                log.Debug("not omit item travel end no[%d] pos[%d] list.len[%d]",
+                    item.no,item.pos,len(*item.list))
             }
         }
     }
@@ -187,9 +192,10 @@ func (this *MergeEngine) Next(termInDoclist []TermInDoc) (inId InIdType,currVali
     if oflag != this.omitflag {
         // 这次归并得到的doc没有用,丢掉吧
         currValid = false
+    } else {
+        currValid = true
     }
 
     inId = currInID
-    currValid = true
     return
 }
