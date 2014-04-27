@@ -156,6 +156,8 @@ func (this *GooseSearch) runIndexServer(listenPort int,requestBufSize int) error
     go func() {
         reqbuf := make([]byte,requestBufSize)
         for {
+            var reqlen int
+
             conn,err := listener.Accept()
             if err != nil {
                 log.Warn("IndexServer accept fail : %s",err.Error())
@@ -163,14 +165,14 @@ func (this *GooseSearch) runIndexServer(listenPort int,requestBufSize int) error
             }
 
             // receive data
-            _,err = conn.Read(reqbuf)
+            reqlen,err = conn.Read(reqbuf)
             if err != nil {
                 log.Warn("IndexSearcher read fail : %s",err.Error())
                 goto LabelError
             }
 
             // index
-            err = this.varIndexer.BuildIndex(NewBufferIterOnce(reqbuf))
+            err = this.varIndexer.BuildIndex(NewBufferIterOnce(reqbuf[:reqlen]))
             if err != nil {
                 log.Warn("IndexSearcher BuildIndex fail : %s",err.Error())
                 goto LabelError
