@@ -48,7 +48,11 @@ func (this *DBSearcher) WriteIndex(InID InIdType,termlist []TermInDoc)(error){
     if this.varIndex == nil {
         return NewGooseError("DBSearcher","No Var Index","")
     }
-     // TODO 支持动态库后可以动态写入索引
+    for _,term := range termlist {
+        l := NewInvList(1)
+        l.Append(Index{ InID : InID,Weight : term.Weight})
+        this.varIndex.WriteIndex(term.Sign,&l)
+    }
     return nil
 }
 
@@ -126,15 +130,19 @@ func (this *DBSearcher) Init(fPath string) (error) {
     if err != nil { return err }
 
     // var index
-    // TODO
+    err = this.varIndex.Open(this.filePath)
+    if err != nil { return err }
 
     return nil
 }
 
 // 进行一次数据同步.在支持动态库情况下进行一次磁盘同步
 func (this *DBSearcher) Sync() (error) {
-    // TODO
     // for var index
+    err := this.varIndex.Sync()
+    if err != nil {
+        return err
+    }
     return nil
 }
 
@@ -145,6 +153,7 @@ func NewDBSearcher() (*DBSearcher) {
     db.valueMgr = NewValueManager()
     db.idMgr = NewIdManager()
     db.staticIndex = NewStaticIndex()
+    db.varIndex = NewVarIndex()
 
     return &db
 }

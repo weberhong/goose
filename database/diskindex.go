@@ -100,7 +100,7 @@ func (this *DiskIndexIterator) Next() (TermSign) {
 }
 
 // 创建新的迭代器.在返回的迭代器生命有效期间,DiskIndex必须有效
-func (this *DiskIndex) NewIterator() (*DiskIndexIterator) {
+func (this *DiskIndex) NewIterator() (IndexIterator) {
     i := DiskIndexIterator{}
     i.currTermCnt = -1
     i.diskindex = this
@@ -295,6 +295,11 @@ func (this *DiskIndex) WriteIndex(t TermSign,l *InvList) (error) {
     return nil
 }
 
+// 库中有多少条拉链
+func (this *DiskIndex) GetTermCount() int64 {
+    return this.selfStatus.TermCount
+}
+
 // 打开已存在的磁盘索引
 func (this *DiskIndex) Open(path string,name string) (error) {
     this.lock.Lock()
@@ -460,7 +465,7 @@ type diskIndexMinHeapItem struct {
     // term所在的磁盘索引
     Index   *DiskIndex
     // 磁盘索引的迭代器指针
-    Iter    *DiskIndexIterator
+    Iter    IndexIterator
 }
 type diskIndexMinHeap []diskIndexMinHeapItem
 
