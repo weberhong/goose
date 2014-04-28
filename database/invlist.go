@@ -3,6 +3,7 @@ package database
 import (
     . "github.com/getwe/goose/utils"
     "container/heap"
+    "math"
 )
 
 // 倒排拉链.实现保证轻量级,可任意拷贝保证不损耗性能
@@ -42,7 +43,14 @@ func (l *InvList) IncCap(newCap int) {
 }
 
 // 归并拉链.假设两拉链都是递增有序,合并后保存有序;最多归并MaxSize个结果
-func (l *InvList) Merge(src InvList,MaxSize int) {
+func (l *InvList) Merge(src InvList,MaxSize ...int) {
+    maxSz := math.MaxInt32
+    if len(MaxSize) > 0 {
+        maxSz = MaxSize[0]
+    }
+    l.merge(src,maxSz)
+}
+func (l *InvList) merge(src InvList,MaxSize int) {
     dstLen := len(*l) + len(src)
     if dstLen > MaxSize {
         dstLen = MaxSize
@@ -124,7 +132,14 @@ func (ih *InvListMinHeap) Pop() interface{} {
 }
 
 // 归并多个有序拉链;最大归并MaxSize个结果.内部实现使用最小堆进行归并
-func (l *InvList) KMerge(list [](*InvList),MaxSize int) {
+func (l *InvList) KMerge(list [](*InvList),MaxSize ...int) {
+    maxSz := math.MaxInt32
+    if len(MaxSize) > 0 {
+        maxSz = MaxSize[0]
+    }
+    l.kmerge(list,maxSz)
+}
+func (l *InvList) kmerge(list [](*InvList),MaxSize int) {
 
     // 创建最小堆
     listheap := &InvListMinHeap{}
