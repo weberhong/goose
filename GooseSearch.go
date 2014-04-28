@@ -46,8 +46,9 @@ func (this *GooseSearch) Run() error {
 
     log.Debug("Read Conf searchGoroutineNum[%d] searchSvrPort[%d] " +
         "indexSvrPort[%d] searchReqBufSize[%d] searchResBufSize[%d] " +
-        "indexReqBufSize[%d]",searchGoroutineNum,searchSvrPort,indexSvrPort,
-        searchReqBufSize,searchResBufSize,indexReqBufSize)
+        "indexReqBufSize[%d] refreshSleepTime[%d]",searchGoroutineNum,
+        searchSvrPort,indexSvrPort,searchReqBufSize,searchResBufSize,
+        indexReqBufSize,refreshSleepTime)
 
     err := this.runSearchServer(int(searchGoroutineNum),int(searchSvrPort),
         int(searchReqBufSize),int(searchResBufSize))
@@ -194,6 +195,11 @@ func (this *GooseSearch) runIndexServer(listenPort int,requestBufSize int) error
 }
 
 func (this *GooseSearch) runRefreshServer(sleeptime int) error {
+
+    if 0 == sleeptime {
+        return log.Error("arg error sleeptime[%d]",sleeptime)
+    }
+
     go func() {
         for {
             time.Sleep(time.Duration(sleeptime) * time.Second)
