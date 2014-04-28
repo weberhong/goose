@@ -42,6 +42,8 @@ func (this *GooseSearch) Run() error {
     indexReqBufSize := this.conf.Int64("GooseSearch.Index.RequestBufferSize")
     //indexResBufSize := this.conf.GetInt("GooseSearch.Index.ResponseBufferSize")
 
+    refreshSleepTime := this.conf.Int64("GooseSearch.Refresh.SleepTime")
+
     log.Debug("Read Conf searchGoroutineNum[%d] searchSvrPort[%d] " +
         "indexSvrPort[%d] searchReqBufSize[%d] searchResBufSize[%d] " +
         "indexReqBufSize[%d]",searchGoroutineNum,searchSvrPort,indexSvrPort,
@@ -54,6 +56,11 @@ func (this *GooseSearch) Run() error {
     }
 
     err = this.runIndexServer(int(indexSvrPort),int(indexReqBufSize))
+    if err != nil {
+        return err
+    }
+
+    err = this.runRefreshServer(int(refreshSleepTime))
     if err != nil {
         return err
     }
@@ -180,6 +187,23 @@ func (this *GooseSearch) runIndexServer(listenPort int,requestBufSize int) error
 
             LabelError:
             conn.Close()
+        }
+    }()
+
+    return nil
+}
+
+func (this *GooseSearch) runRefreshServer(sleeptime int) error {
+    go func() {
+        for {
+            time.Sleep(time.Duration(sleeptime) * time.Second)
+            log.Debug("refresh now")
+
+            // sync search db
+            err := this.searchDB.Sync()
+            if err != nil {
+                log.Warn(err)
+            }
         }
     }()
 
