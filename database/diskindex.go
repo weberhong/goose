@@ -9,6 +9,7 @@ import (
     "os"
     "path/filepath"
     log "github.com/getwe/goose/log"
+    "errors"
 )
 
 const (
@@ -165,7 +166,7 @@ func (this *DiskIndex) readIndex2(t TermSign)(*BigFileIndex,error) {
     // 先查一级索引
     index1 := this.readIndex1(t)
     if index1 == -1 {
-        return nil,log.Warn("readIndex1 term [%d] Not Found",t)
+        return nil,errors.New("readIndex1 term Not Found")
     }
 
     var bigFileI BigFileIndex
