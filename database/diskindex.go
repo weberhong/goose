@@ -327,14 +327,14 @@ func (this *DiskIndex) Open(path string,name string) (error) {
     ind3name := fmt.Sprintf("%s.index3",this.fileName)
     err = this.index3.Open(this.filePath,ind3name)
     if err != nil {
-        return err
+        return log.Error(err)
     }
 
     // 打开二级索引
     ind2name := filepath.Join(this.filePath,fmt.Sprintf("%s.index2",this.fileName))
     this.index2,err = os.OpenFile(ind2name,os.O_RDONLY,0644)
     if err != nil {
-        return err
+        return log.Error(err)
     }
 
     // 计算一级索引大小
@@ -404,7 +404,7 @@ func (this *DiskIndex) Init(path string,name string,maxFileSz uint32,MaxTermCnt 
     ind3name := fmt.Sprintf("%s.index3",this.fileName)
     err := this.index3.Init(this.filePath,ind3name,maxFileSz)
     if err != nil {
-        return err
+        return log.Error(err)
     }
 
     // 打开二级索引
@@ -412,7 +412,7 @@ func (this *DiskIndex) Init(path string,name string,maxFileSz uint32,MaxTermCnt 
     // 打开新文件,创建|截断|只写
     this.index2,err = os.OpenFile(ind2name,os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0644)
     if err != nil {
-        return err
+        return log.Error(err)
     }
 
     // 计算预期一级索引大小

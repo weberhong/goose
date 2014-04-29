@@ -5,6 +5,7 @@ import (
     "sync"
     "time"
     "path/filepath"
+    log "github.com/getwe/goose/log"
 )
 
 type VarIndexStatus struct {
@@ -110,14 +111,14 @@ func (this *VarIndex) Sync() (error) {
         err := this.disk[dstDisk].Init(this.filePath,this.diskName[dstDisk],
             maxFileSz,dstTermCount)
         if err != nil {
-            return err
+            return log.Error(err)
         }
 
         // merge (mem,currDisk) to dstDisk
         err = IndexMerge(this.mem,this.disk[this.varIndexStatus.CurrDisk],
             this.disk[dstDisk])
         if err != nil {
-            return err
+            return log.Error(err)
         }
 
         // 关闭后重新打开,后面就只读操作
@@ -126,7 +127,7 @@ func (this *VarIndex) Sync() (error) {
         this.disk[dstDisk] = NewDiskIndex()
         err = this.disk[dstDisk].Open(this.filePath,this.diskName[dstDisk])
         if err != nil {
-            return err
+            return log.Error(err)
         }
     }
 
@@ -181,7 +182,7 @@ func (this *VarIndex) Open(path string) error {
         i := this.varIndexStatus.CurrDisk
         err := this.disk[i].Open(this.filePath,this.diskName[i])
         if err != nil {
-            return err
+            return log.Error(err)
         }
         // 另外一个磁盘库暂时不需要
         j := (i + 1)%2
@@ -193,7 +194,7 @@ func (this *VarIndex) Open(path string) error {
         // 初始化一个磁盘库
         err := this.disk[0].Init(this.filePath,this.diskName[0],maxFileSz,maxTermCnt)
         if err != nil {
-            return err
+            return log.Error(err)
         }
         // 另外一个磁盘库暂时不需要
         this.disk[1] = nil
