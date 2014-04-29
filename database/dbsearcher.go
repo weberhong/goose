@@ -59,11 +59,25 @@ func (this *DBSearcher) WriteIndex(InID InIdType,termlist []TermInDoc)(error){
 
 // 读取索引,可并发
 func (this *DBSearcher) ReadIndex(t TermSign)(*InvList,error) {
-    // TODO 实现动态库后需要读取两个库合并后返回
-    if this.staticIndex == nil {
-        return nil,log.Error("no static index")
+    var err error
+    var staticlist *InvList
+    var varlist *InvList
+    if this.staticIndex != nil {
+        staticlist,err = this.staticIndex.ReadIndex(t)
+        if err != nil {
+            staticlist = NewInvListPointer(0)
+        }
     }
-    return this.staticIndex.Read(t)
+
+    if this.varIndex != nil {
+        varlist,err = this.varIndex.ReadIndex(t)
+        if err != nil {
+            varlist = NewInvListPointer(0)
+        }
+    }
+
+    staticlist.Merge(*varlist)
+    return staticlist,nil
 }
 
 

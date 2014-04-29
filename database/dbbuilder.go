@@ -116,6 +116,8 @@ func (this *DBBuilder) Init(fPath string,MaxTermCnt int,
     this.maxDataFileSz = maxDataFileSz
     this.maxIndexFileSz = maxIndexFileSz
 
+    os.RemoveAll(this.filePath)
+
     if _,err := os.Stat(this.filePath); os.IsNotExist(err) {
         err := os.MkdirAll(this.filePath,0755)
         if err != nil {

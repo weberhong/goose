@@ -108,14 +108,15 @@ func (this *BigFile) Open(path string,name string) (error) {
         return log.Warn(err)
     }
     // 检验状态文件
-    if this.bigfileStat.SuggestFileSize == 0 ||
-       this.bigfileStat.FileCnt == 0 ||
-       this.bigfileStat.LastFileOffset == 0 {
+    if this.bigfileStat.SuggestFileSize == 0 {
         return log.Error("BigFile.Open stat file error")
     }
 
     // 除了最后一个文件,其它以只读方式打开
-    readOnlyFileCnt := this.bigfileStat.FileCnt - 1
+    readOnlyFileCnt := uint8(0)
+    if this.bigfileStat.FileCnt > 0 {
+        readOnlyFileCnt = this.bigfileStat.FileCnt - 1
+    }
     this.readOnlyFile = make([]*os.File,readOnlyFileCnt)
     for i:=0; uint8(i)<readOnlyFileCnt;i++ {
         f,err := this.openRoFile(uint8(i))
@@ -128,18 +129,22 @@ func (this *BigFile) Open(path string,name string) (error) {
     }
 
     // 最后一个文件已读写方式打开
-    err = this.openRwFile(this.bigfileStat.FileCnt - 1)
-    if err != nil {
-        return err
-    }
-    // 设置文件指针
-    this.readwriteFile.Seek(int64(this.bigfileStat.LastFileOffset),0)
+    if this.bigfileStat.FileCnt > 0 {
+        err = this.openRwFile(this.bigfileStat.FileCnt - 1)
+        if err != nil {
+            return err
+        }
+        // 设置文件指针
+        this.readwriteFile.Seek(int64(this.bigfileStat.LastFileOffset),0)
 
-    // 最后一个文件的文件指针应该就是文件大小
-    sz,_ := FileSize(this.readwriteFile)
-    if sz != int64(this.bigfileStat.LastFileOffset) {
-        return log.Error("BigFile.Open","FileStatInfo Error LastFileOffset:[%d] != FileSize:[%d]",
+        // 最后一个文件的文件指针应该就是文件大小
+        sz,_ := FileSize(this.readwriteFile)
+        if sz != int64(this.bigfileStat.LastFileOffset) {
+            return log.Error("BigFile.Open","FileStatInfo Error LastFileOffset:[%d] != FileSize:[%d]",
             this.bigfileStat.LastFileOffset,sz)
+        }
+    } else {
+        this.readwriteFile = nil
     }
 
     return nil

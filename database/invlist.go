@@ -68,7 +68,10 @@ func (l *InvList) merge(src InvList,MaxSize int) {
         } else {
             // 进行InvList Merge的是同一个term的两条拉链,同一个term命中
             // 了同一个doc(内部id),但是出现在两个拉链中,这个逻辑不会发生
-            panic("two list of the same termsign have a same doc(in) ? ")
+            // panic("two list of the same termsign have a same doc(in) ? ")
+            list = append(list,(*l)[i])
+            i++
+            j++
         }
 
     }
@@ -198,6 +201,12 @@ func NewInvList(arg ...int)(InvList) {
         return make([]Index,0)
     }
 }
+
+func NewInvListPointer(arg ...int)(*InvList) {
+    l := NewInvList(arg...)
+    return &l
+}
+
 
 
 

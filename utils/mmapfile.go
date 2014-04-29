@@ -43,10 +43,9 @@ func (this *MmapFile) OpenFile(path string,name string,fsize uint32) (error) {
         if err != nil {
             return log.Error("WriteString : %s",err.Error())
         }
+    } else if fstat.Size() > int64(fsize) {
+        f.Truncate(int64(fsize))
     }
-    // FIXME 文件实际大小比要映射的区间还大,应该?
-    // 不进行截断,全部mmap纯浪费内存了
-    // fstat.Size() > int64(fsize)
 
     // 映射
     this.fileMmap,err = mmap.Map(f,mmap.RDWR,0)

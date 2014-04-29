@@ -17,7 +17,7 @@ func (this *StaticIndex) Open(path string) (error) {
 }
 
 // 读取索引
-func (this *StaticIndex) Read(t TermSign)(*InvList,error) {
+func (this *StaticIndex) ReadIndex(t TermSign)(*InvList,error) {
     return this.disk.ReadIndex(t)
 }
 

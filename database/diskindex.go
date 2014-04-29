@@ -37,6 +37,7 @@ type DiskIndexStatus struct {
 
 // 磁盘索引.只支持一次性写入后只读操作.
 type DiskIndex struct {
+    JsonStatusFile
     // 磁盘存储目录
     filePath        string
 
@@ -48,9 +49,7 @@ type DiskIndex struct {
     lock            sync.RWMutex
 
     // 索引状态信息
-    selfStatus      DiskIndexStatus
-    // 状态信息存放的文件
-    statFileFullPath string
+    diskStatus      DiskIndexStatus
 
     // 索引状态(这个不能也不应该持久化存储在磁盘)
     indexStatus      string
@@ -90,7 +89,7 @@ func (this *DiskIndexIterator) Next() (TermSign) {
     if this.diskindex == nil {
         return TermSign(0)
     }
-    if this.currTermCnt >= this.diskindex.selfStatus.TermCount {
+    if this.currTermCnt >= this.diskindex.diskStatus.TermCount {
         return TermSign(0)
     }
     var currTerm TermSign
@@ -139,8 +138,8 @@ func (this *DiskIndex) readIndex1(t TermSign)(int) {
     // 再在块内进行二分查找[low,high]
     low := blockNum * Index1BolckNum
     high := low + Index1BolckNum - 1
-    if high > int(this.selfStatus.TermCount) - 1 {
-        high = int(this.selfStatus.TermCount)  - 1
+    if high > int(this.diskStatus.TermCount) - 1 {
+        high = int(this.diskStatus.TermCount)  - 1
     }
 
     var currTerm TermSign
@@ -287,17 +286,17 @@ func (this *DiskIndex) WriteIndex(t TermSign,l *InvList) (error) {
     // 索引写入成功才递增termCount
     // 如果写失败,最多占用了index3的文件空间,整个索引还是正常的
     this.currTermCount++
-    this.selfStatus.TermCount = this.currTermCount
+    this.diskStatus.TermCount = this.currTermCount
 
     // BUG(honggengwei) 每次写都更新状态文件,是否有必要,会不会影响性能
-    this.saveStatFile()
+    this.SaveJsonFile()
 
     return nil
 }
 
 // 库中有多少条拉链
 func (this *DiskIndex) GetTermCount() int64 {
-    return this.selfStatus.TermCount
+    return this.diskStatus.TermCount
 }
 
 // 打开已存在的磁盘索引
@@ -312,15 +311,20 @@ func (this *DiskIndex) Open(path string,name string) (error) {
     this.filePath = path
     this.fileName = name
 
-    this.statFileFullPath = filepath.Join(this.filePath,
+    this.StatusFilePath = filepath.Join(this.filePath,
         fmt.Sprintf("%s.index.stat",this.fileName))
+    // 磁盘状态文件需要设置的两个步骤:(1)指示要写入的结构;(2)设置写入路径
+    this.SelfStatus = &this.diskStatus
 
-    this.parseStatFile()
+    err := this.ParseJsonFile()
+    if err != nil {
+        return log.Error("parse file [%s] : %s",this.StatusFilePath,err)
+    }
 
     // 打开三级索引
     this.index3 = new(BigFile)
     ind3name := fmt.Sprintf("%s.index3",this.fileName)
-    err := this.index3.Open(this.filePath,ind3name)
+    err = this.index3.Open(this.filePath,ind3name)
     if err != nil {
         return err
     }
@@ -333,19 +337,23 @@ func (this *DiskIndex) Open(path string,name string) (error) {
     }
 
     // 计算一级索引大小
-    this.currTermCount = this.selfStatus.TermCount
-    index1Sz := this.selfStatus.MaxTermCount * int64(binary.Size(TermSign(0)))
+    this.currTermCount = this.diskStatus.TermCount
+    index1Sz := this.diskStatus.MaxTermCount * int64(binary.Size(TermSign(0)))
 
     // 打开一级索引
     this.index1 = new(MmapFile)
     ind1name := fmt.Sprintf("%s.index1",this.fileName)
     err = this.index1.OpenFile(this.filePath,ind1name,uint32(index1Sz))
     if err != nil {
-        return err
+        return log.Error("mmap open[%s] size[%d] fail : %s",ind1name,index1Sz,err)
     }
 
     // 构建内存零级索引
-    this.index0 = make([]TermSign,this.currTermCount/ Index1BolckNum + 1)
+    lastBlock := 0
+    if this.currTermCount % Index1BolckNum > 0 {
+        lastBlock = 1
+    }
+    this.index0 = make([]TermSign,int(this.currTermCount/ Index1BolckNum) + lastBlock)
     var currTerm TermSign
     currTermSize := uint32(binary.Size(currTerm))
 
@@ -357,7 +365,8 @@ func (this *DiskIndex) Open(path string,name string) (error) {
         tmpCount++
     }
     if len(this.index0) != tmpCount {
-        return log.Error("DiskIndex.Open build index0 fail")
+        return log.Error("index1[%s] build index0 fail len(index0)[%d] build[%d]",
+            ind1name,len(this.index0),tmpCount)
     }
 
     this.indexStatus = DiskIndexReadOnly
@@ -382,10 +391,12 @@ func (this *DiskIndex) Init(path string,name string,maxFileSz uint32,MaxTermCnt 
     this.filePath = path
     this.fileName = name
 
-    this.statFileFullPath = filepath.Join(this.filePath,
+    this.StatusFilePath = filepath.Join(this.filePath,
         fmt.Sprintf("%s.index.stat",this.fileName))
+    // 磁盘状态文件需要设置的两个步骤:(1)指示要写入的结构;(2)设置写入路径
+    this.SelfStatus = &this.diskStatus
 
-    this.selfStatus.MaxTermCount = MaxTermCnt
+    this.diskStatus.MaxTermCount = MaxTermCnt
 
     // 初始化三级索引
     this.index3 = &BigFile{}
@@ -404,26 +415,19 @@ func (this *DiskIndex) Init(path string,name string,maxFileSz uint32,MaxTermCnt 
     }
 
     // 计算预期一级索引大小
-    index1Sz := this.selfStatus.MaxTermCount * int64(binary.Size(TermSign(0)))
+    index1Sz := this.diskStatus.MaxTermCount * int64(binary.Size(TermSign(0)))
 
     // 打开一级索引
     this.index1 = new(MmapFile)
     ind1name := fmt.Sprintf("%s.index1",this.fileName)
     err = this.index1.OpenFile(this.filePath,ind1name,uint32(index1Sz))
     if err != nil {
-        return err
+        return log.Error("mmap open[%s] size[%d] fail : %s",ind1name,index1Sz,err)
     }
 
     this.indexStatus = DiskIndexWriteOnly
-    return nil
-}
 
-func (this *DiskIndex) parseStatFile() (error) {
-    return JsonDecodeFromFile(&this.selfStatus,this.statFileFullPath)
-}
-
-func (this *DiskIndex) saveStatFile() (error) {
-    return JsonEncodeToFile(this.selfStatus,this.statFileFullPath)
+    return this.SaveJsonFile()
 }
 
 
@@ -432,7 +436,7 @@ func (this *DiskIndex) Close() {
     this.lock.Lock()
     defer this.lock.Unlock()
 
-    this.saveStatFile()
+    this.SaveJsonFile()
 
     this.index0 = nil
     this.index1.Close()
@@ -447,8 +451,8 @@ func (this *DiskIndex) Close() {
 func NewDiskIndex() (*DiskIndex) {
     index := DiskIndex{}
     index.indexStatus = DiskIndexInit
-    index.selfStatus.MaxTermCount = 0
-    index.selfStatus.TermCount = 0
+    index.diskStatus.MaxTermCount = 0
+    index.diskStatus.TermCount = 0
     index.index0 = nil
     index.index1 = nil
     index.index2 = nil

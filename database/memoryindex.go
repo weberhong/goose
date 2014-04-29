@@ -40,7 +40,8 @@ func (this *MemoryIndex) WriteIndex(t TermSign,l *InvList) (error) {
 
     tmp,ok := this.ri[t]
     if !ok {
-        *tmp = NewInvList()
+        nl := NewInvList()
+        tmp = &nl
     }
 
     tmp.Concat(*l)

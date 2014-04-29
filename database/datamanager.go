@@ -60,7 +60,7 @@ func (this *DataManager) Open(path string) (error) {
     data0Name := fmt.Sprintf("data.d0")
     err = this.data0.OpenFile(this.filePath,data0Name,data0Size)
     if err != nil {
-        return err
+        return log.Error("mmap open[%s] size[%d] fail : %s",data0Name,data0Size,err)
     }
     // 二级索引BigFile打开
     this.data1 = new(BigFile)
@@ -90,7 +90,7 @@ func (this *DataManager) Init(path string,maxId InIdType,maxFileSz uint32) (erro
     data0Name := fmt.Sprintf("data.d0")
     err := this.data0.OpenFile(this.filePath,data0Name,data0Size)
     if err != nil {
-        return err
+        return log.Error("mmap open[%s] size[%d] fail : %s",data0Name,data0Size,err)
     }
     // 二级索引BigFile打开
     this.data1 = new(BigFile)

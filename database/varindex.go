@@ -53,7 +53,7 @@ func (this *VarIndex) WriteIndex(t TermSign,l *InvList) (error) {
 }
 
 // 读取索引
-func (this *VarIndex) Read(t TermSign)(*InvList,error) {
+func (this *VarIndex) ReadIndex(t TermSign)(*InvList,error) {
     // 加多锁
     this.readLock.RLock()
     defer this.readLock.RUnlock()
@@ -85,7 +85,7 @@ func (this *VarIndex) Sync() (error) {
     }
 
     now := time.Now().Unix()
-    if now - this.lastSyncTime < 30 {
+    if now - this.lastSyncTime < 10 {
         // 强制限制两次sync的间隔时间
         return nil
     }

@@ -95,6 +95,7 @@ func NewMergeEngine(db DataBaseReader,termList []TermInQuery) (*MergeEngine,erro
 
         item.list,err = db.ReadIndex(e.Sign)
         if err != nil {
+            log.Warn("read term[%d] : %s",e.Sign,err)
             item.list = nil
         }
         item.no = i
@@ -106,7 +107,10 @@ func NewMergeEngine(db DataBaseReader,termList []TermInQuery) (*MergeEngine,erro
             item.omit = 1 << uint(i) // 不可省term
         }
 
-        heap.Push(mg.lstheap,item)
+        // 拉链有效才放入堆
+        if item.list != nil {
+            heap.Push(mg.lstheap,item)
+        }
 
         // 同时记下不可省term的标记
         if e.CanOmit == false {
