@@ -5,6 +5,7 @@ import (
     "sync"
     "encoding/binary"
     "path/filepath"
+    log "github.com/getwe/goose/log"
 )
 
 const (
@@ -57,7 +58,7 @@ func (this *IdManager) Open(path string) (error) {
 
     err = this.mfile.OpenFile(path,"id",uint32(this.idStatus.MaxInId* idSize))
     if err != nil {
-        return NewGooseError("IdManager","OpenFile",err.Error())
+        return err
     }
 
     return nil
@@ -82,7 +83,7 @@ func (this *IdManager) Init(path string,maxId InIdType) (error) {
 
     err := this.mfile.OpenFile(path,"id",uint32(maxId * idSize))
     if err != nil {
-        return NewGooseError("IdManager","OpenFile",err.Error())
+        return err
     }
 
     return this.SaveJsonFile()
@@ -115,11 +116,11 @@ func (this *IdManager) AllocID(outId OutIdType) (InIdType,error) {
     defer this.lock.Unlock()
 
     if outId == 0 {
-        return 0,NewGooseError("AllocID","illegal outId","")
+        return 0,log.Warn("illegal outId [%d]",0)
     }
 
     if this.idStatus.CurId >= this.idStatus.MaxInId{
-        return 0,NewGooseError("AllocID","id count limit","")
+        return 0,log.Error("InId [%d] out of limit MaxInId[%d]",this.idStatus.CurId,this.idStatus.MaxInId)
     }
 
     inID := this.idStatus.CurId
@@ -128,7 +129,7 @@ func (this *IdManager) AllocID(outId OutIdType) (InIdType,error) {
     offset := inID * idSize
     err := this.mfile.WriteNum(uint32(offset),uint32(inID))
     if err != nil {
-        return 0,NewGooseError("AllocID","Write Mmap fail",err.Error())
+        return 0,err
     }
 
     // 确认分配成功才真正占用这个id
@@ -145,7 +146,7 @@ func (this *IdManager) GetOutID(inId InIdType)(OutIdType,error) {
     //defer this.lock.Unlock()
 
     if inId >= this.idStatus.MaxInId{
-        return 0,NewGooseError("GetOutID","inId Error","")
+        return 0,log.Error("inId [%d] illegal MaxInId[%d]",inId,this.idStatus.MaxInId)
     }
 
     offset := inId * idSize
@@ -154,7 +155,7 @@ func (this *IdManager) GetOutID(inId InIdType)(OutIdType,error) {
     tmp,err := this.mfile.ReadNum(uint32(offset),
         uint32(binary.Size(outId)))
     if err != nil {
-        return 0,NewGooseError("GetOutID",err.Error(),"")
+        return 0,err
     }
     outId = OutIdType(tmp)
 

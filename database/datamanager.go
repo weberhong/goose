@@ -5,6 +5,7 @@ import (
     "encoding/binary"
     "path/filepath"
     "fmt"
+    log "github.com/getwe/goose/log"
 )
 
 // data磁盘数据文件自描述所需的字段
@@ -59,14 +60,14 @@ func (this *DataManager) Open(path string) (error) {
     data0Name := fmt.Sprintf("data.d0")
     err = this.data0.OpenFile(this.filePath,data0Name,data0Size)
     if err != nil {
-        return NewGooseError("DataManager.Init","OpenFile data0",err.Error())
+        return err
     }
     // 二级索引BigFile打开
     this.data1 = new(BigFile)
     data1Name := fmt.Sprintf("data.d1")
     err = this.data1.Open(this.filePath,data1Name)
     if err != nil {
-        return NewGooseError("DataManager.Init","OpenFile data1",err.Error())
+        return err
     }
 
     return nil
@@ -89,14 +90,14 @@ func (this *DataManager) Init(path string,maxId InIdType,maxFileSz uint32) (erro
     data0Name := fmt.Sprintf("data.d0")
     err := this.data0.OpenFile(this.filePath,data0Name,data0Size)
     if err != nil {
-        return NewGooseError("DataManager.Init","OpenFile data0",err.Error())
+        return err
     }
     // 二级索引BigFile打开
     this.data1 = new(BigFile)
     data1Name := fmt.Sprintf("data.d1")
     err = this.data1.Init(this.filePath,data1Name,this.maxDataFileSize)
     if err != nil {
-        return NewGooseError("DataManager.Init","OpenFile data1",err.Error())
+        return err
     }
 
     return this.SaveJsonFile()
@@ -107,12 +108,12 @@ func (this *DataManager) Sync() (error) {
 
     err := this.data0.Flush()
     if err != nil {
-        return NewGooseError("DataManager.Sync","data0.Flush",err.Error())
+        return err
     }
 
     err = this.data1.Sync()
     if err != nil {
-        return NewGooseError("DataManager.Sync","data1.Flush",err.Error())
+        return err
     }
     return err
 }
@@ -128,23 +129,22 @@ func (this *DataManager) Close() (error) {
 // 数据会变成垃圾数据占用磁盘空间,无法删除.
 func (this *DataManager) Append(inId InIdType,d Data) (error) {
     if inId > this.dataStatus.MaxInId{
-        return NewGooseError("DataManager.Append","inId illegal","")
+        return log.Error("inId [%d] illegal MaxInId[%d]",inId,this.dataStatus.MaxInId)
     }
 
     // 写二级索引
     d1Index,err := this.data1.Append(d)
     if err != nil {
-        return NewGooseError("DataManager.Append","Write data1 fail",err.Error())
+        return err
     }
     if d1Index.Length != uint32(len(d)) {
-        return NewGooseError("DataManager.Append","Write data1",
-            fmt.Sprintf("datalen[%d],writelen[%d]",len(d),d1Index.Length))
+        return log.Error("Write data1 datalen[%d],writelen[%d]",len(d),d1Index.Length)
     }
 
     // 写一级索引
     err = this.writeData0(*d1Index,inId)
     if err != nil {
-        return NewGooseError("DataManager.Append","Write data0 fail",err.Error())
+        return err
     }
 
     return nil
@@ -153,18 +153,17 @@ func (this *DataManager) Append(inId InIdType,d Data) (error) {
 // 读取Data数据,可以并发.
 func (this *DataManager) ReadData(inId InIdType,buf *Data) (error) {
     if inId == 0 || inId > this.dataStatus.MaxInId{
-        return NewGooseError("DataManager.Read","inId illegal","")
+        return log.Error("inId [%d] illegal MaxInId[%d]",inId,this.dataStatus.MaxInId)
     }
 
     // 读一级索引
     bigFileI,err := this.readData0(inId)
     if err != nil {
-        return NewGooseError("DataManager.Read","Read data0 fail",err.Error())
+        return err
     }
     if bigFileI.Length == 0 {
-        return NewGooseError("DataManager.Read","Read data0",
-            fmt.Sprintf("inId[%d],fileNo[%d],length[%d],offset[%d]",
-            inId,bigFileI.FileNo,bigFileI.Length,bigFileI.Offset))
+        return log.Error("Read data0 inId[%d],fileNo[%d],length[%d],offset[%d]",
+            inId,bigFileI.FileNo,bigFileI.Length,bigFileI.Offset)
     }
 
 
@@ -174,7 +173,7 @@ func (this *DataManager) ReadData(inId InIdType,buf *Data) (error) {
     }
     err = this.data1.Read(bigFileI,*buf)
     if err != nil {
-        return NewGooseError("DataManager.Read","Read data1 fail",err.Error())
+        return err
     }
 
     return nil

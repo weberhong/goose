@@ -3,6 +3,7 @@ package database
 import (
 	. "github.com/getwe/goose/utils"
     "os"
+    log "github.com/getwe/goose/log"
 )
 
 // 静态索引生成器.并发不安全,内部不加锁浪费性能.调用者需要保证不并发使用.
@@ -33,7 +34,7 @@ type DBBuilder struct {
 // 根据唯一外部ID,分配内部ID,可并发内部有锁控制按顺序分配
 func (this *DBBuilder) AllocID(outID OutIdType) (InIdType,error){
     if this.idMgr == nil {
-        return 0,NewGooseError("DBBuilder","use nil handler","")
+        return 0,log.Error("no id manager")
     }
     return this.idMgr.AllocID(outID)
 }
@@ -41,7 +42,7 @@ func (this *DBBuilder) AllocID(outID OutIdType) (InIdType,error){
 // 写入索引,不可并发写入
 func (this *DBBuilder) WriteIndex(InID InIdType,termlist []TermInDoc)(error){
     if this.transformMgr == nil {
-        return NewGooseError("DBBuilder","use nil handler","")
+        return log.Error("no transform manager")
     }
 
     return this.transformMgr.WriteIndex(InID,termlist)
@@ -50,7 +51,7 @@ func (this *DBBuilder) WriteIndex(InID InIdType,termlist []TermInDoc)(error){
 // 写入Value数据,可并发写入
 func (this *DBBuilder) WriteValue(InID InIdType,v Value) (error) {
     if this.valueMgr == nil {
-        return NewGooseError("DBBuilder","use nil handler","")
+        return log.Error("no value manager")
     }
 
     return this.valueMgr.WriteValue(InID,v)
@@ -59,7 +60,7 @@ func (this *DBBuilder) WriteValue(InID InIdType,v Value) (error) {
 // 写入Data数据,可并发调用,内部锁控制
 func (this *DBBuilder) WriteData(InID InIdType,d Data) (error) {
     if this.dataMgr == nil {
-        return NewGooseError("DBBuilder","use nil handler","")
+        return log.Error("no data manager")
     }
 
     // dataMgr内部锁控制,并发写顺序写入

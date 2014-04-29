@@ -6,6 +6,7 @@ import (
     "os"
     "io"
     "encoding/binary"
+    log "github.com/getwe/goose/log"
 )
 
 const (
@@ -25,7 +26,7 @@ type BigFileIndex struct {
 func (this *BigFileIndex) Decode(buf []byte) (error) {
     order := binary.BigEndian
     if len(buf) < 9 {
-        return NewGooseError("BigFileIndex.Decode","buf length error","")
+        return log.Error("BigFileIndex.Decode buf length [%d] error",len(buf))
     }
 
     this.FileNo = uint8(buf[0])
@@ -37,7 +38,7 @@ func (this *BigFileIndex) Decode(buf []byte) (error) {
 func (this *BigFileIndex) Encode(buf []byte) (error) {
     order := binary.BigEndian
     if len(buf) < 9 {
-        return NewGooseError("BigFileIndex.Encode","buf length error","")
+        return log.Error("BigFileIndex.Decode buf length [%d] error",len(buf))
     }
 
     buf[0] = this.FileNo
@@ -104,13 +105,13 @@ func (this *BigFile) Open(path string,name string) (error) {
     // 解析获取文件信息
     err := this.parseStatFile()
     if err != nil {
-        return NewGooseError("BigFile.Open",err.Error(),"")
+        return log.Warn(err)
     }
     // 检验状态文件
     if this.bigfileStat.SuggestFileSize == 0 ||
        this.bigfileStat.FileCnt == 0 ||
        this.bigfileStat.LastFileOffset == 0 {
-        return NewGooseError("BigFile.Open","stat file error","")
+        return log.Error("BigFile.Open stat file error")
     }
 
     // 除了最后一个文件,其它以只读方式打开
@@ -137,10 +138,8 @@ func (this *BigFile) Open(path string,name string) (error) {
     // 最后一个文件的文件指针应该就是文件大小
     sz,_ := FileSize(this.readwriteFile)
     if sz != int64(this.bigfileStat.LastFileOffset) {
-        return NewGooseError("BigFile.Open","FileStatInfo Error",
-        fmt.Sprintf("LastFileOffset:[%d] != FileSize:[%d]",
-        this.bigfileStat.LastFileOffset,
-        sz))
+        return log.Error("BigFile.Open","FileStatInfo Error LastFileOffset:[%d] != FileSize:[%d]",
+            this.bigfileStat.LastFileOffset,sz)
     }
 
     return nil
@@ -187,7 +186,7 @@ func (this *BigFile) Append(buf []byte)(*BigFileIndex,error) {
 
     f,err := this.getRwFile()
     if err != nil {
-        return nil,NewGooseError("BigFile.Append","getRwFile fail",err.Error())
+        return nil,err
     }
 
     i := BigFileIndex{}
@@ -196,20 +195,19 @@ func (this *BigFile) Append(buf []byte)(*BigFileIndex,error) {
     off,err := this.readwriteFile.Seek(0,1)
     i.Offset = uint32(off)
     if i.Offset != this.bigfileStat.LastFileOffset {
-        return nil,NewGooseError("BigFile.Append",
-            fmt.Sprintf("getOffset[%d] LastFileOffset[%d]",
-                i.Offset,this.bigfileStat.LastFileOffset),"")
+        return nil,log.Error("BigFile.Append getOffset[%d] LastFileOffset[%d]",
+                i.Offset,this.bigfileStat.LastFileOffset)
     }
 
     n,err := f.Write(buf)
     if err != nil {
-        return nil,NewGooseError("BigFile.Append","write fail",err.Error())
+        return nil,log.Error("BigFile.Append write fail : %s",err.Error())
     }
     if uint32(n) != i.Length {
         // 写成功,但是写入长度跟期望对不上
         // 回滚文件指针
         this.readwriteFile.Seek(int64(i.Offset),0)
-        return nil,NewGooseError("BigFile.Append","write succ bug length error",
+        return nil,log.Error("BigFile.Append write succ bug length error : %s",
             err.Error())
     }
     // 更新状态文件
@@ -222,10 +220,11 @@ func (this *BigFile) Append(buf []byte)(*BigFileIndex,error) {
 // 读取数据,外部需要准备好够存放的desBuf
 func (this *BigFile) Read(i BigFileIndex,desBuf []byte)(error) {
     if i.FileNo >= this.bigfileStat.FileCnt {
-        return NewGooseError("BigFile.Read","FileNo Error","")
+        return log.Error("BigFile.Read FileNo[%d] Error",i.FileNo)
     }
     if i.Length > uint32(len(desBuf)) {
-        return NewGooseError("BigFile.Read","BigFileIndex.Length > len(desBuf)","")
+        return log.Error("BigFile.Read BigFileIndex.Length[%d] > len(desBuf)[%d]",
+            i.Length,uint32(len(desBuf)))
     }
 
     var f *os.File
@@ -242,12 +241,11 @@ func (this *BigFile) Read(i BigFileIndex,desBuf []byte)(error) {
         }
     }
     if uint32(n) != i.Length {
-        return NewGooseError("BigFile.Read","Read Length Error",
-            fmt.Sprintf("offset[%d] destBuf len[%d],ReadAt len[%d]",
-            i.Offset,i.Length,n))
+        return log.Error("Read Length Error offset[%d] destBuf len[%d],ReadAt len[%d]",
+            i.Offset,i.Length,n)
     }
     if err != nil {
-        return NewGooseError("BigFile.Read","ReadAt file",err.Error())
+        return log.Error("ReadAt file",err.Error())
     }
     return nil
 }
@@ -365,12 +363,10 @@ func (this *BigFile) openRwFile(fileno uint8) (error) {
         this.readwriteFile,err = os.OpenFile(this.readwriteFileFullPath,
             os.O_RDWR|os.O_CREATE|os.O_APPEND,0644)
     } else {
-        return NewGooseError("BigFile",fmt.Sprintf("File Status Error : [%d]",
-            this.fileModel),"")
+        return log.Error("File Status Error : [%d]",this.fileModel)
     }
     if err != nil {
-        return NewGooseError("BigFile.openRwFile",
-            "open readwrite file fail",err.Error())
+        return log.Error("open readwrite file fail : %s",err.Error())
     }
     return nil
 }
@@ -380,8 +376,7 @@ func (this *BigFile) openRoFile(fileno uint8) (*os.File,error) {
     tname := fmt.Sprintf("%s%s%d",this.fileName,dataFileSuffix,fileno)
     f,err := os.OpenFile(filepath.Join(this.filePath,tname),os.O_RDONLY,0644)
     if err != nil {
-        return nil,NewGooseError("BigFile.openRoFile",
-            "open readonly file fail",err.Error())
+        return nil,log.Error("open readonly file fail : %s",err.Error())
     }
     return f,nil
 }

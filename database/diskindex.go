@@ -8,6 +8,7 @@ import (
     "fmt"
     "os"
     "path/filepath"
+    log "github.com/getwe/goose/log"
 )
 
 const (
@@ -165,10 +166,9 @@ func (this *DiskIndex) readIndex2(t TermSign)(*BigFileIndex,error) {
     // 先查一级索引
     index1 := this.readIndex1(t)
     if index1 == -1 {
-        return nil,NewGooseError("DiskIndex.readIndex2","readIndex1",
-            fmt.Sprintf("term %d Not Found",t))
+        return nil,log.Warn("readIndex1 term [%d] Not Found",t)
     }
-    
+
     var bigFileI BigFileIndex
 
     dataLen := binary.Size(bigFileI)
@@ -178,12 +178,12 @@ func (this *DiskIndex) readIndex2(t TermSign)(*BigFileIndex,error) {
     buf := make([]byte,dataLen)
     n,err := this.index2.ReadAt(buf,int64(filePos))
     if err != nil || n != len(buf) {
-        return nil,NewGooseError("DiskIndex.readIndex2","readIndex2",err.Error())
+        return nil,err
     }
 
     err = bigFileI.Decode(buf)
     if err != nil {
-        return nil,NewGooseError("DiskIndex.readIndex2","readIndex2",err.Error())
+        return nil,err
     }
 
     return &bigFileI,nil
@@ -193,21 +193,21 @@ func (this *DiskIndex) readIndex3(t TermSign)(*InvList,error) {
     // 查二级索引
     bigFileI,err := this.readIndex2(t)
     if err != nil {
-        return nil,NewGooseError("DiskIndex.readIndex3","readIndex2",err.Error())
+        return nil,err
     }
 
     // TODO 读索引会进行一次内存分配,后续可以优化由外面传递一个buf进来
     buff := make([]byte,bigFileI.Length)
     err = this.index3.Read(*bigFileI,buff)
     if err != nil {
-        return nil,NewGooseError("DiskIndex.readIndex3","read disk",err.Error())
+        return nil,err
     }
 
     // 把二进制buf根据gob协议反序列化为InvList
     var list InvList
     err = GobDecode(buff,&list)
     if err != nil {
-        return nil,NewGooseError("DiskIndex.readIndex3","GobDecode",err.Error())
+        return nil,err
     }
 
     return &list,nil
@@ -228,13 +228,13 @@ func (this *DiskIndex) writeIndex2(t TermSign, bigFileI *BigFileIndex) (error) {
     // 写入buf
     err := bigFileI.Encode(buf)
     if err != nil {
-        return NewGooseError("DiskIndex.writeIndex2","encode",err.Error())
+        return err
     }
 
     // 写入二级索引
     n,err := this.index2.WriteAt(buf,int64(filePos))
     if err != nil || n != len(buf) {
-        return NewGooseError("DiskIndex.writeIndex2","writeIndex2",err.Error())
+        return err
     }
     return this.writeIndex1(t)
 }
@@ -243,13 +243,13 @@ func (this *DiskIndex) writeIndex3(t TermSign, l *InvList) (error) {
     // 先对InvList进行序列化
     binBuf,err := GobEncode(*l)
     if err != nil {
-        return NewGooseError("DiskIndex.writeIndex3","GobEncode",err.Error())
+        return err
     }
 
     // 写入bigfile
     bigFileI,err := this.index3.Append(binBuf)
     if err != nil {
-        return NewGooseError("DiskIndex.writeIndex3","index3.Append",err.Error())
+        return err
     }
 
     // 写入二级索引
@@ -262,7 +262,7 @@ func (this *DiskIndex) ReadIndex(t TermSign)(*InvList,error) {
 
     // 打开的磁盘只读索引下才允许读取
     if this.indexStatus != DiskIndexReadOnly {
-        return nil,NewGooseError("DiskIndex.Read","status error","")
+        return nil,log.Error("DiskIndex.Read status error")
     }
     return this.readIndex3(t)
 }
@@ -276,12 +276,12 @@ func (this *DiskIndex) WriteIndex(t TermSign,l *InvList) (error) {
     defer this.lock.Unlock()
 
     if this.indexStatus != DiskIndexWriteOnly {
-        return NewGooseError("DiskIndex.Write","status error","")
+        return log.Error("index status error")
     }
 
     err := this.writeIndex3(t,l)
     if err != nil {
-        return NewGooseError("DiskIndex.Write","",err.Error())
+        return err
     }
 
     // 索引写入成功才递增termCount
@@ -306,7 +306,7 @@ func (this *DiskIndex) Open(path string,name string) (error) {
     defer this.lock.Unlock()
 
     if this.indexStatus != DiskIndexInit {
-        return NewGooseError("DiskIndex.Open","status error","")
+        return log.Error("index status error")
     }
 
     this.filePath = path
@@ -322,14 +322,14 @@ func (this *DiskIndex) Open(path string,name string) (error) {
     ind3name := fmt.Sprintf("%s.index3",this.fileName)
     err := this.index3.Open(this.filePath,ind3name)
     if err != nil {
-        return NewGooseError("DiskIndex.Open","index3.Open",err.Error())
+        return err
     }
 
     // 打开二级索引
     ind2name := filepath.Join(this.filePath,fmt.Sprintf("%s.index2",this.fileName))
     this.index2,err = os.OpenFile(ind2name,os.O_RDONLY,0644)
     if err != nil {
-        return NewGooseError("DiskIndex.Open","index2.Open",err.Error())
+        return err
     }
 
     // 计算一级索引大小
@@ -341,7 +341,7 @@ func (this *DiskIndex) Open(path string,name string) (error) {
     ind1name := fmt.Sprintf("%s.index1",this.fileName)
     err = this.index1.OpenFile(this.filePath,ind1name,uint32(index1Sz))
     if err != nil {
-        return NewGooseError("DiskIndex.Open","index1.Open",err.Error())
+        return err
     }
 
     // 构建内存零级索引
@@ -357,7 +357,7 @@ func (this *DiskIndex) Open(path string,name string) (error) {
         tmpCount++
     }
     if len(this.index0) != tmpCount {
-        return NewGooseError("DiskIndex.Open","build index0 fail","")
+        return log.Error("DiskIndex.Open build index0 fail")
     }
 
     this.indexStatus = DiskIndexReadOnly
@@ -372,11 +372,11 @@ func (this *DiskIndex) Init(path string,name string,maxFileSz uint32,MaxTermCnt 
     defer this.lock.Unlock()
 
     if this.indexStatus != DiskIndexInit {
-        return NewGooseError("DiskIndex.Init","status error","")
+        return log.Error("index status error")
     }
 
     if len(path) == 0 || len(name) == 0 {
-        return NewGooseError("DiskIndexInit","path|name error","")
+        return log.Error("path[%s] name[%s] error")
     }
 
     this.filePath = path
@@ -392,7 +392,7 @@ func (this *DiskIndex) Init(path string,name string,maxFileSz uint32,MaxTermCnt 
     ind3name := fmt.Sprintf("%s.index3",this.fileName)
     err := this.index3.Init(this.filePath,ind3name,maxFileSz)
     if err != nil {
-        return NewGooseError("DiskIndex.Init","index3.Init",err.Error())
+        return err
     }
 
     // 打开二级索引
@@ -400,7 +400,7 @@ func (this *DiskIndex) Init(path string,name string,maxFileSz uint32,MaxTermCnt 
     // 打开新文件,创建|截断|只写
     this.index2,err = os.OpenFile(ind2name,os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0644)
     if err != nil {
-        return NewGooseError("DiskIndex.Init","index2.Init",err.Error())
+        return err
     }
 
     // 计算预期一级索引大小
@@ -411,7 +411,7 @@ func (this *DiskIndex) Init(path string,name string,maxFileSz uint32,MaxTermCnt 
     ind1name := fmt.Sprintf("%s.index1",this.fileName)
     err = this.index1.OpenFile(this.filePath,ind1name,uint32(index1Sz))
     if err != nil {
-        return NewGooseError("DiskIndex.Init","index3.Init",err.Error())
+        return err
     }
 
     this.indexStatus = DiskIndexWriteOnly

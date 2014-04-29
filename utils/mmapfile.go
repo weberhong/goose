@@ -6,7 +6,7 @@ import (
 	"github.com/edsrzf/mmap-go"
     "path/filepath"
     "reflect"
-    "fmt"
+    log "github.com/getwe/goose/log"
 )
 
 type MmapFile struct {
@@ -29,7 +29,7 @@ func (this *MmapFile) OpenFile(path string,name string,fsize uint32) (error) {
     // 打开文件
     f,err := os.OpenFile(filepath.Join(path,name),os.O_RDWR|os.O_CREATE,0644)
     if err != nil {
-        return NewGooseError("MmapFile.OpenFile","os.OpenFile",err.Error())
+        return log.Error("os.OpenFile : %s",err.Error())
     }
 
     fstat,_ := f.Stat()
@@ -37,11 +37,11 @@ func (this *MmapFile) OpenFile(path string,name string,fsize uint32) (error) {
         // 产生空洞
         _,err = f.Seek(int64(fsize-1),0)
         if err != nil {
-            return NewGooseError("MmapFile.OpenFile","file seek",err.Error())
+            return log.Error("file seek : %s",err.Error())
         }
         _,err = f.WriteString(" ")
         if err != nil {
-            return NewGooseError("MmapFile.OpenFile","WriteString",err.Error())
+            return log.Error("WriteString : %s",err.Error())
         }
     }
     // FIXME 文件实际大小比要映射的区间还大,应该?
@@ -51,13 +51,13 @@ func (this *MmapFile) OpenFile(path string,name string,fsize uint32) (error) {
     // 映射
     this.fileMmap,err = mmap.Map(f,mmap.RDWR,0)
     if err != nil {
-        return NewGooseError("MmapFile.OpenFile","mmap.Map",err.Error())
+        return log.Error("mmap.Map fail : %s",err.Error())
     }
 
     // 映射后,相当于分配了一个[]byte,其大小应该是等于fsize
     if uint64(len(this.fileMmap)) != uint64(fsize) {
-        return NewGooseError("Mmapfile","fileMmap length error",
-            fmt.Sprintf("[%d] != [%d]",len(this.fileMmap),fsize))
+        return log.Error("fileMmap length error [%d] != [%d]",
+            len(this.fileMmap),fsize)
     }
 
     this.filePath = path
@@ -89,10 +89,10 @@ func (this *MmapFile) Flush() (error) {
 func (this *MmapFile) WriteNum(offset uint32,n interface{}) (error) {
     destType,destSz := IntKindSize(n)
     if destSz == 0 {
-        return NewGooseError("Mmapfile.WriteNum","not a num","")
+        return log.Error("Mmapfile.WriteNum not a num")
     }
     if int64(offset) + int64(destSz) > int64(len(this.fileMmap)) {
-        return NewGooseError("Mmapfile.WriteNum","over length limit","")
+        return log.Error("Mmapfile.WriteNum over length limit")
     }
 
     // 从map中分配一个[]byte,已经保证长度足够
@@ -102,7 +102,7 @@ func (this *MmapFile) WriteNum(offset uint32,n interface{}) (error) {
     order := binary.BigEndian
     num := reflect.ValueOf(n)
     if !num.IsValid() {
-        return NewGooseError("Mmapfile.WriteNum","Invalid num","")
+        return log.Error("Mmapfile.WriteNum not a num")
     }
     switch destType {
     case reflect.Int8:
@@ -122,7 +122,7 @@ func (this *MmapFile) WriteNum(offset uint32,n interface{}) (error) {
     case reflect.Uint64:
         order.PutUint64(buf, uint64(num.Uint()))
     default:
-        return NewGooseError("MmapFile.WriteNum","Wrong Type","")
+        return log.Error("MmapFile.WriteNum Wrong Type")
     }
   
     /*
@@ -185,10 +185,10 @@ func (this *MmapFile) ReadUint64(offset uint32) (uint64,error) {
 // 读取offset开始的destSz个字节作为数字返回
 func (this *MmapFile) ReadNum(offset uint32,destSz uint32) (uint64,error) {
     if destSz == 0 {
-        return 0,NewGooseError("Mmapfile.ReadNum","not a basic num","")
+        return 0,log.Error("Mmapfile.ReadNum not a basic num")
     }
     if int64(offset) + int64(destSz) > int64(len(this.fileMmap)) {
-        return 0,NewGooseError("Mmapfile.ReadNum","over length limit","")
+        return 0,log.Error("Mmapfile.ReadNum over length limit")
     }
 
     buf := this.fileMmap[offset:offset+uint32(destSz)]
@@ -204,7 +204,7 @@ func (this *MmapFile) ReadNum(offset uint32,destSz uint32) (uint64,error) {
     case 8:
         return uint64(order.Uint64(buf)),nil
     default:
-        return 0,NewGooseError("MmapFile.ReadNum","Wrong Type","")
+        return 0,log.Error("MmapFile.ReadNum Wrong Type")
     }
     return 0,nil
     /*
@@ -241,7 +241,7 @@ func (this *MmapFile) WriteBytes(offset uint32,buf []byte,length uint32)(error){
     }
 
     if uint64(offset + length) > uint64(len(this.fileMmap)) {
-        return NewGooseError("Mmapfile.WriteBytes","over length limit","")
+        return log.Error("Mmapfile.WriteBytes over length limit")
     }
 
     var i uint32
@@ -254,7 +254,7 @@ func (this *MmapFile) WriteBytes(offset uint32,buf []byte,length uint32)(error){
 // read bytes (reference) 
 func (this *MmapFile) ReadBytes(offset uint32,length uint32) ([]byte,error) {
     if uint64(offset + length) > uint64(len(this.fileMmap)) {
-        return nil,NewGooseError("Mmapfile.ReadBytes","over length limit","")
+        return nil,log.Error("Mmapfile.ReadBytes over length limit")
     }
 
     return this.fileMmap[offset:offset+length],nil
@@ -263,7 +263,7 @@ func (this *MmapFile) ReadBytes(offset uint32,length uint32) ([]byte,error) {
 // read bytes (copy slice)
 func (this *MmapFile) ReadBytesCopy(offset int32,length int32) ([]byte,error) {
     if int64(offset + length) > int64(len(this.fileMmap)) {
-        return nil,NewGooseError("Mmapfile.ReadBytes","over length limit","")
+        return nil,log.Error("Mmapfile.ReadBytes over length limit")
     }
 
     newbuf := make([]byte,length)

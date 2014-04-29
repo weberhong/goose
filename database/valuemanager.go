@@ -5,6 +5,7 @@ import (
     "sync"
     "fmt"
     "path/filepath"
+    log "github.com/getwe/goose/log"
 )
 
 const (
@@ -75,8 +76,7 @@ func (this *ValueManager)Open(path string) (error) {
         sz := uint32(this.fileValueMaxCnt*this.valueStatus.ValueSize)
         err := this.mfile[i].OpenFile(path,tname,sz )
         if err != nil {
-            return NewGooseError("ValueManager.Init",
-                fmt.Sprintf("open mfile(%d),szie(%d)",i,sz),err.Error())
+            return log.Error("open mfile[%d],szie[%d] fail[%s]",i,sz,err.Error())
         }
     }
 
@@ -109,8 +109,7 @@ func (this *ValueManager) Init(path string,maxId InIdType,valueSz uint32) (error
         sz := uint32(this.fileValueMaxCnt*this.valueStatus.ValueSize)
         err := this.mfile[i].OpenFile(path,tname,sz )
         if err != nil {
-            return NewGooseError("ValueManager.Init",
-                fmt.Sprintf("open mfile(%d),szie(%d)",i,sz),err.Error())
+            return log.Error("open mfile[%d],szie[%d] fail[%s]",i,sz,err.Error())
         }
     }
 
@@ -124,7 +123,7 @@ func (this *ValueManager) Sync() (error) {
     for i:=0;uint32(i)<this.fileCnt;i++ {
         err := this.mfile[i].Flush()
         if err != nil {
-            return NewGooseError("ValueManager.Sync","",err.Error())
+            return err
         }
     }
     return nil
@@ -133,20 +132,20 @@ func (this *ValueManager) Sync() (error) {
 // 写入Value.可并发写
 func (this *ValueManager) WriteValue(inId InIdType,v Value)(error) {
     if inId > this.valueStatus.MaxInId{
-        return NewGooseError("ValueManager.WriteValue","inId illegal","")
+        return log.Error("inId [%d] illegal MaxInId[%d]",inId,this.valueStatus.MaxInId)
     }
 
     fileNo := uint32(int64(inId) / int64(this.fileValueMaxCnt))
     offset := uint32(int64(inId) % int64(this.fileValueMaxCnt))
 
     if fileNo >= this.fileCnt {
-        return NewGooseError("ValueManager.WriteValue","inId out of limit","")
+        return log.Error("inId out of limit")
     }
 
     // 最多写入this.valueStatus.ValueSize个字节
     err := this.mfile[fileNo].WriteBytes(offset,v[:],this.valueStatus.ValueSize)
     if err != nil {
-        return NewGooseError("ValueManager.WriteValue","WriteBytes",err.Error())
+        return err
     }
     return nil
 }
@@ -154,19 +153,19 @@ func (this *ValueManager) WriteValue(inId InIdType,v Value)(error) {
 // 读取value的引用,value只能进行读操作,任何写操作都是非法的
 func (this *ValueManager) ReadValue(inId InIdType)(Value,error) {
     if inId > this.valueStatus.MaxInId{
-        return nil,NewGooseError("ValueManager.ReadValue","inId illegal","")
+        return nil,log.Error("inId [%d] illegal MaxInId[%d]",inId,this.valueStatus.MaxInId)
     }
 
     fileNo := uint32(int64(inId) / int64(this.fileValueMaxCnt))
     offset := uint32(int64(inId) % int64(this.fileValueMaxCnt))
 
     if fileNo >= this.fileCnt {
-        return nil,NewGooseError("ValueManager.ReadValue","inId out of limit","")
+        return nil,log.Error("inId out of limit")
     }
 
     v,err := this.mfile[fileNo].ReadBytes(offset,this.valueStatus.ValueSize)
     if err != nil {
-        return nil,NewGooseError("ValueManager.ReadValue","WriteBytes",err.Error())
+        return nil,err
     }
     return v[:],nil
 }

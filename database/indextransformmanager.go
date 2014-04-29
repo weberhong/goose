@@ -53,8 +53,7 @@ func (this *IndexTransformManager) Init(fPath string,MaxTermCnt int) error {
 func (this *IndexTransformManager) WriteIndex(InID InIdType,termlist []TermInDoc)(error){
     err := this.checkTransform()
     if err != nil {
-        return NewGooseError("IndexTransformManager.WriteIndex","checkTransform",
-            err.Error())
+        return err
     }
     this.termCount += int64(len(termlist))
     return this.currIndexTf.AddOneDoc(InID,termlist)
@@ -142,8 +141,7 @@ func (this *IndexTransformManager) Dump(dstdb WriteOnlyIndex) (error) {
     // 先把内存中的索引写入磁盘
     err := this.saveTransform()
     if err != nil {
-        return NewGooseError("IndexTransformManager.Dump","saveTransform fail",
-            err.Error())
+        return err
     }
 
     // diskIndexName保持着全部磁盘索引的磁盘路径,接下来需要全部打开,进行一次
@@ -201,8 +199,7 @@ func (this *IndexTransformManager) Dump(dstdb WriteOnlyIndex) (error) {
             tmplst.KMerge(alllist,math.MaxInt32)
             err := dstdb.WriteIndex(lastTerm,&tmplst)
             if err != nil {
-                return NewGooseError("IndexTransformManager.Dump","write index",
-                    err.Error())
+                return err
             }
 
             // 开始新的term,清空状态

@@ -3,6 +3,7 @@ package database
 import (
     . "github.com/getwe/goose/utils"
     "sort"
+    log "github.com/getwe/goose/log"
 )
 
 // 最初几次分配空间较小,短拉链就满足了,再往后就固定分配2k个空间
@@ -102,7 +103,7 @@ func (this *IndexTransform) addOneTerm(id InIdType, t TermInDoc) (error) {
     list,ok = this.bighash[t.Sign]
     if !ok {
         // 还取不到
-        return NewGooseError("IndexTransform.addOneTerm","add new value","fail")
+        return log.Error("add new value fail")
     }
 
     list.Append(Index{ InID : id,Weight : t.Weight})
