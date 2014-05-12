@@ -1,6 +1,6 @@
 #goose
 goose是使用golang开发检索框架,目标是打造一个简单方便使用的小型检索系统.
-期望解决百万量级的doc数的.
+期望解决百万量级doc数量的检索问题.
 
 goose这个名称的由来:
 由于是使用golang开发的search engine,一开始想到就是用gose这个单词,但是其没有什么
