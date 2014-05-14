@@ -108,7 +108,7 @@ func NewMergeEngine(db DataBaseReader,termList []TermInQuery) (*MergeEngine,erro
         }
 
         // 拉链有效才放入堆
-        if item.list != nil {
+        if item.list != nil && item.list.Len() > 0 {
             heap.Push(mg.lstheap,item)
         }
 
