@@ -64,6 +64,7 @@ type SearchStrategy interface {
         termInQuery []TermInQuery,termInDoc []TermInDoc,
         termCnt uint32,context *StyContext) (TermWeight,error)
 
+    /*
     // 对结果拉链进行过滤
     Filt(queryInfo interface{},list SearchResultList,context *StyContext) (error)
 
@@ -74,6 +75,16 @@ type SearchStrategy interface {
     // 构建返回包
     Response(queryInfo interface{},list SearchResultList,
         db DataBaseReader,response []byte,context *StyContext) (reslen int,err error)
+    */
+
+    // 合并三个最初的接口(Filt,Adjust,Response)为一个
+    // 划分的几个接口,只是给策略增加不必要的麻烦,修改全部开放给策略自定义实现
+    Response(queryInfo interface{},
+        list SearchResultList,
+        valueReader ValueReader,
+        dataReader DataReader,
+        response []byte,
+        context *StyContext) (reslen int,err error)
 
 }
 

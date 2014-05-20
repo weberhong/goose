@@ -67,18 +67,8 @@ func (this *Searcher) Search(context *StyContext,reqbuf []byte,resbuf []byte) (r
 
     }
 
-    // 结果过滤
-    err = this.strategy.Filt(queryInfo,result,context)
-    if err != nil {
-    }
-
-    // 调权
-    err = this.strategy.Adjust(queryInfo,result,this.db,context)
-    if err != nil {
-    }
-
     // 完成
-    reslen,err = this.strategy.Response(queryInfo,result,this.db,resbuf,context)
+    reslen,err = this.strategy.Response(queryInfo,result,this.db,this.db,resbuf,context)
     if err != nil {
     }
 
