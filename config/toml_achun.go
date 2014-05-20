@@ -25,6 +25,10 @@ func (this *TomlConf_achun) Bool(key string) bool {
     return this.conf[key].Boolean()
 }
 
+func (this *TomlConf_achun) Float64Array(key string) []float64 {
+    return this.conf[key].FloatArray()
+}
+
 type tomlConfParser_achun struct {
 }
 
