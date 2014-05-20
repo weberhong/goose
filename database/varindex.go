@@ -66,9 +66,14 @@ func (this *VarIndex) ReadIndex(t TermSign)(*InvList,error) {
 
     // 怎么保证this.disk[currDisk]一定可用,有可能被sync操作破坏
     // readlock保证disk[currDisk]一定可用
-    disklst,err := this.disk[this.varIndexStatus.CurrDisk].ReadIndex(t)
-    if err != nil {
-        return nil,err
+    disklst := NewInvListPointer()
+    if this.varIndexStatus.CurrDisk >= 0 &&
+        this.disk[this.varIndexStatus.CurrDisk] != nil {
+
+        disklst,err = this.disk[this.varIndexStatus.CurrDisk].ReadIndex(t)
+        if err != nil {
+            return nil,err
+        }
     }
     memlst.Merge(*disklst)
     return memlst,nil
@@ -91,6 +96,15 @@ func (this *VarIndex) Sync() (error) {
         return nil
     }
 
+    // 目前还没有任何磁盘库
+    if this.varIndexStatus.CurrDisk < 0 {
+        // 假设当前磁盘库是1库
+        this.varIndexStatus.CurrDisk = 1
+        // 空的库
+        this.disk[this.varIndexStatus.CurrDisk] = NewDiskIndex()
+    }
+
+    // 目标写入的磁盘库
     dstDisk := (this.varIndexStatus.CurrDisk + 1) % 2
 
     // 接下来从memory库和currDisk库读索引,合并写入dstDisk
@@ -171,15 +185,12 @@ func (this *VarIndex) Open(path string) error {
     this.diskName[1] = "var.disk1"
 
     // ----------------------------------------------------
-    // maxFileSz 索引大文件单个文件的最大大小.
-    maxFileSz := uint32(1024*1024*1024)
-    // maxTermCnt 是预期要写入的term的总数量.
-    maxTermCnt := int64(10*10000)
 
     if this.varIndexStatus.CurrDisk >= 0 {
         // 已有磁盘索引
         // 打开当前磁盘库
         i := this.varIndexStatus.CurrDisk
+        this.disk[i] = NewDiskIndex()
         err := this.disk[i].Open(this.filePath,this.diskName[i])
         if err != nil {
             return log.Error(err)
@@ -189,14 +200,9 @@ func (this *VarIndex) Open(path string) error {
         this.disk[j] = nil
     } else {
         // 完全没有磁盘索引存在
-        this.varIndexStatus.CurrDisk = 0
-
-        // 初始化一个磁盘库
-        err := this.disk[0].Init(this.filePath,this.diskName[0],maxFileSz,maxTermCnt)
-        if err != nil {
-            return log.Error(err)
-        }
-        // 另外一个磁盘库暂时不需要
+        // 都标志为不可用,有需要再说
+        this.varIndexStatus.CurrDisk = -1
+        this.disk[0] = nil
         this.disk[1] = nil
     }
 
@@ -210,12 +216,12 @@ func NewVarIndex() (*VarIndex) {
     s.mem = NewMemoryIndex()
 
     s.disk = make([](*DiskIndex),2)
-    s.disk[0] = NewDiskIndex()
-    s.disk[1] = NewDiskIndex()
+    s.disk[0] = nil
+    s.disk[1] = nil
 
     s.diskName = make([]string,2)
 
-    s.varIndexStatus.CurrDisk = 0
+    s.varIndexStatus.CurrDisk = -1
     s.lastSyncTime = time.Now().Unix()
 
     return &s

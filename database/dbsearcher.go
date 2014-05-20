@@ -67,6 +67,8 @@ func (this *DBSearcher) ReadIndex(t TermSign)(*InvList,error) {
         if err != nil {
             staticlist = NewInvListPointer(0)
         }
+    } else {
+        staticlist = NewInvListPointer(0)
     }
 
     if this.varIndex != nil {
@@ -74,6 +76,8 @@ func (this *DBSearcher) ReadIndex(t TermSign)(*InvList,error) {
         if err != nil {
             varlist = NewInvListPointer(0)
         }
+    } else {
+        varlist = NewInvListPointer(0)
     }
 
     staticlist.Merge(*varlist)

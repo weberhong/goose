@@ -440,9 +440,18 @@ func (this *DiskIndex) Close() {
     this.SaveJsonFile()
 
     this.index0 = nil
-    this.index1.Close()
-    this.index2.Close()
-    this.index3.Close()
+    if this.index1 != nil {
+        this.index1.Close()
+        this.index1 = nil
+    }
+    if this.index2 != nil {
+        this.index2.Close()
+        this.index2 = nil
+    }
+    if this.index3 != nil {
+        this.index3.Close()
+        this.index3 = nil
+    }
 
     this.indexStatus = DiskIndexClose
 }
