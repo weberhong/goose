@@ -136,7 +136,7 @@ func (this *ValueManager) WriteValue(inId InIdType,v Value)(error) {
     }
 
     fileNo := uint32(int64(inId) / int64(this.fileValueMaxCnt))
-    offset := uint32(int64(inId) % int64(this.fileValueMaxCnt))
+    offset := uint32(int64(inId) % int64(this.fileValueMaxCnt)) * this.valueStatus.ValueSize
 
     if fileNo >= this.fileCnt {
         return log.Error("inId out of limit")
@@ -157,7 +157,7 @@ func (this *ValueManager) ReadValue(inId InIdType)(Value,error) {
     }
 
     fileNo := uint32(int64(inId) / int64(this.fileValueMaxCnt))
-    offset := uint32(int64(inId) % int64(this.fileValueMaxCnt))
+    offset := uint32(int64(inId) % int64(this.fileValueMaxCnt)) * this.valueStatus.ValueSize
 
     if fileNo >= this.fileCnt {
         return nil,log.Error("inId out of limit")
