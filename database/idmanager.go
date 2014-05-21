@@ -127,7 +127,7 @@ func (this *IdManager) AllocID(outId OutIdType) (InIdType,error) {
 
     // 分配信息,写入mmap
     offset := inID * idSize
-    err := this.mfile.WriteNum(uint32(offset),uint32(inID))
+    err := this.mfile.WriteNum(uint32(offset),uint32(outId))
     if err != nil {
         return 0,err
     }
