@@ -90,6 +90,9 @@ type TermInQuery struct {
     // term在query中的打分,TermWeight在策略中可以自由定制
     Weight      TermWeight
 
+    // term在query中的属性信息,在策略中可以自由定制存储
+    Attr        uint32
+
     // 是否是可省词
     CanOmit     bool
 
