@@ -36,7 +36,7 @@ func (this *MemoryIndex) ReadIndex(t TermSign)(*InvList,error) {
 // 同一个term多次写入,会进行append操作.
 func (this *MemoryIndex) WriteIndex(t TermSign,l *InvList) (error) {
     this.rwlock.Lock()
-    this.rwlock.Unlock()
+    defer this.rwlock.Unlock()
 
     tmp,ok := this.ri[t]
     if !ok {
@@ -58,7 +58,7 @@ func (this *MemoryIndex) Close() {
 
 func (this *MemoryIndex) Clear() {
     this.rwlock.Lock()
-    this.rwlock.Unlock()
+    defer this.rwlock.Unlock()
 
     this.ri = make(map[TermSign]*InvList)
 }
