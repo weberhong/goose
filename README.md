@@ -26,5 +26,4 @@ goose是一个检索框架实现,由几个基础模块组成:
 目前,还在开发中...
 
 ##goose的设计
-这里介绍goose的内部设计  
-todo ..
+开了个头,争取把[详解goose的系列文章](http://getwe.cn/技术/搜索引擎/goose/catalog/)写完
