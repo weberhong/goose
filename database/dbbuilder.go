@@ -1,98 +1,97 @@
 package database
 
 import (
+	log "github.com/getwe/goose/log"
 	. "github.com/getwe/goose/utils"
-    "os"
-    log "github.com/getwe/goose/log"
+	"os"
 )
 
 // 静态索引生成器.并发不安全,内部不加锁浪费性能.调用者需要保证不并发使用.
 type DBBuilder struct {
 
-    // 正排转倒排管理
-    transformMgr    *IndexTransformManager
+	// 正排转倒排管理
+	transformMgr *IndexTransformManager
 
-    // id管理
-    idMgr           *IdManager
+	// id管理
+	idMgr *IdManager
 
-    // value管理
-    valueMgr        *ValueManager
+	// value管理
+	valueMgr *ValueManager
 
-    // data管理
-    dataMgr         *DataManager
+	// data管理
+	dataMgr *DataManager
 
-    filePath        string
-    indexFileName        string
-    maxTermCnt      int
-    maxId           InIdType
-    valueSz         uint32
-    maxDataFileSz   uint32
-    maxIndexFileSz  uint32
-
+	filePath       string
+	indexFileName  string
+	maxTermCnt     int
+	maxId          InIdType
+	valueSz        uint32
+	maxDataFileSz  uint32
+	maxIndexFileSz uint32
 }
 
 // 根据唯一外部ID,分配内部ID,可并发内部有锁控制按顺序分配
-func (this *DBBuilder) AllocID(outID OutIdType) (InIdType,error){
-    if this.idMgr == nil {
-        return 0,log.Error("no id manager")
-    }
-    return this.idMgr.AllocID(outID)
+func (this *DBBuilder) AllocID(outID OutIdType) (InIdType, error) {
+	if this.idMgr == nil {
+		return 0, log.Error("no id manager")
+	}
+	return this.idMgr.AllocID(outID)
 }
 
 // 写入索引,不可并发写入
-func (this *DBBuilder) WriteIndex(InID InIdType,termlist []TermInDoc)(error){
-    if this.transformMgr == nil {
-        return log.Error("no transform manager")
-    }
+func (this *DBBuilder) WriteIndex(InID InIdType, termlist []TermInDoc) error {
+	if this.transformMgr == nil {
+		return log.Error("no transform manager")
+	}
 
-    return this.transformMgr.WriteIndex(InID,termlist)
+	return this.transformMgr.WriteIndex(InID, termlist)
 }
 
 // 写入Value数据,可并发写入
-func (this *DBBuilder) WriteValue(InID InIdType,v Value) (error) {
-    if this.valueMgr == nil {
-        return log.Error("no value manager")
-    }
+func (this *DBBuilder) WriteValue(InID InIdType, v Value) error {
+	if this.valueMgr == nil {
+		return log.Error("no value manager")
+	}
 
-    return this.valueMgr.WriteValue(InID,v)
+	return this.valueMgr.WriteValue(InID, v)
 }
 
 // 写入Data数据,可并发调用,内部锁控制
-func (this *DBBuilder) WriteData(InID InIdType,d Data) (error) {
-    if this.dataMgr == nil {
-        return log.Error("no data manager")
-    }
+func (this *DBBuilder) WriteData(InID InIdType, d Data) error {
+	if this.dataMgr == nil {
+		return log.Error("no data manager")
+	}
 
-    // dataMgr内部锁控制,并发写顺序写入
-    return this.dataMgr.Append(InID,d)
+	// dataMgr内部锁控制,并发写顺序写入
+	return this.dataMgr.Append(InID, d)
 }
 
 // 进行一次数据同步.对于DBBuilder,一次同步后全部数据写入磁盘,只允许一次写入
-func (this *DBBuilder) Sync() (error) {
-    this.dataMgr.Close()
+func (this *DBBuilder) Sync() error {
+	this.dataMgr.Close()
 
-    this.valueMgr.Sync()
+	this.valueMgr.Sync()
 
-    this.idMgr.Sync()
+	this.idMgr.Sync()
 
-    // 打开一个最终可写入的磁盘索引并写入全部索引
-    db := NewDiskIndex()
-    err := db.Init(this.filePath,this.indexFileName,this.maxIndexFileSz,
-        this.transformMgr.GetTermCount())
-    if err != nil {
-        return err
-    }
-    err = this.transformMgr.Dump(db)
-    if err != nil {
-        return err
-    }
-    db.Close()
+	// 打开一个最终可写入的磁盘索引并写入全部索引
+	db := NewDiskIndex()
+	err := db.Init(this.filePath, this.indexFileName, this.maxIndexFileSz,
+		this.transformMgr.GetTermCount())
+	if err != nil {
+		return err
+	}
+	err = this.transformMgr.Dump(db)
+	if err != nil {
+		return err
+	}
+	db.Close()
 
-    this.transformMgr = nil
-    this.idMgr = nil
-    this.valueMgr = nil
-    this.dataMgr = nil
-    return nil
+	this.transformMgr = nil
+	this.idMgr = nil
+	this.valueMgr = nil
+	this.dataMgr = nil
+	return nil
 }
 
 // 初始化工作.
@@ -102,57 +101,59 @@ func (this *DBBuilder) Sync() (error) {
 // valueSz:value数据固定大小.
 // maxIndexFileSz:index数据分文件每个文件的最大大小.
 // maxDataFileSz:data数据分文件每个文件的最大大小.
-func (this *DBBuilder) Init(fPath string,MaxTermCnt int,
-    Maxid InIdType,valueSz uint32,
-    maxIndexFileSz uint32,maxDataFileSz uint32) error {
+func (this *DBBuilder) Init(fPath string, MaxTermCnt int,
+	Maxid InIdType, valueSz uint32,
+	maxIndexFileSz uint32, maxDataFileSz uint32) error {
 
-    var err error
+	var err error
 
-    this.filePath = fPath
-    this.indexFileName = "static"
-    this.maxTermCnt = MaxTermCnt
-    this.maxId = Maxid
-    this.valueSz = valueSz
-    this.maxDataFileSz = maxDataFileSz
-    this.maxIndexFileSz = maxIndexFileSz
+	this.filePath = fPath
+	this.indexFileName = "static"
+	this.maxTermCnt = MaxTermCnt
+	this.maxId = Maxid
+	this.valueSz = valueSz
+	this.maxDataFileSz = maxDataFileSz
+	this.maxIndexFileSz = maxIndexFileSz
 
-    os.RemoveAll(this.filePath)
+	os.RemoveAll(this.filePath)
 
-    if _,err := os.Stat(this.filePath); os.IsNotExist(err) {
-        err := os.MkdirAll(this.filePath,0755)
-        if err != nil {
-            return err
-        }
-    }
+	if _, err := os.Stat(this.filePath); os.IsNotExist(err) {
+		err := os.MkdirAll(this.filePath, 0755)
+		if err != nil {
+			return err
+		}
+	}
 
+	err = this.transformMgr.Init(fPath, MaxTermCnt)
+	if err != nil {
+		return err
+	}
 
-    err = this.transformMgr.Init(fPath,MaxTermCnt)
-    if err != nil { return err }
+	err = this.idMgr.Init(fPath, Maxid)
+	if err != nil {
+		return err
+	}
 
-    err = this.idMgr.Init(fPath,Maxid)
-    if err != nil { return err }
+	err = this.valueMgr.Init(fPath, Maxid, valueSz)
+	if err != nil {
+		return err
+	}
 
-    err = this.valueMgr.Init(fPath,Maxid,valueSz)
-    if err != nil { return err }
+	err = this.dataMgr.Init(fPath, Maxid, maxDataFileSz)
+	if err != nil {
+		return err
+	}
 
-    err = this.dataMgr.Init(fPath,Maxid,maxDataFileSz)
-    if err != nil { return err }
-
-    return nil
+	return nil
 }
 
+func NewDBBuilder() *DBBuilder {
+	db := DBBuilder{}
 
-func NewDBBuilder() (*DBBuilder) {
-    db := DBBuilder{}
+	db.transformMgr = NewIndexTransformManager()
+	db.idMgr = NewIdManager()
+	db.valueMgr = NewValueManager()
+	db.dataMgr = NewDataManager()
 
-    db.transformMgr = NewIndexTransformManager()
-    db.idMgr        = NewIdManager()
-    db.valueMgr     = NewValueManager()
-    db.dataMgr      = NewDataManager()
-
-    return &db
+	return &db
 }
-
-
-
-
