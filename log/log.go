@@ -7,24 +7,23 @@
 package log
 
 import (
-    log4go "github.com/alecthomas/log4go"
-    config "github.com/getwe/goose/config"
+	log4go "github.com/alecthomas/log4go"
+	config "github.com/getwe/goose/config"
 )
 
 var (
-    debugLogger log4go.Logger
-    infoLogger  log4go.Logger
-    errorLogger log4go.Logger
+	debugLogger log4go.Logger
+	infoLogger  log4go.Logger
+	errorLogger log4go.Logger
 )
 
 func init() {
-    debugLogger = make(log4go.Logger)
-    infoLogger  = make(log4go.Logger)
-    errorLogger = make(log4go.Logger)
+	debugLogger = make(log4go.Logger)
+	infoLogger = make(log4go.Logger)
+	errorLogger = make(log4go.Logger)
 }
 
-
-func newFileFilter(file string) (*log4go.FileLogWriter) {
+func newFileFilter(file string) *log4go.FileLogWriter {
 	flw := log4go.NewFileLogWriter(file, false)
 	//flw.SetFormat("[%D %T] [%L] (%S) %M")
 	flw.SetFormat("[%D %T] [%L] %M")
@@ -32,45 +31,44 @@ func newFileFilter(file string) (*log4go.FileLogWriter) {
 	flw.SetRotateSize(0)
 	flw.SetRotateDaily(false)
 
-    return flw
+	return flw
 }
 
-func LoadConfiguration(confPath string) (error) {
+func LoadConfiguration(confPath string) error {
 
-    conf,err := config.NewConf(confPath)
-    if err != nil {
-        return err
-    }
+	conf, err := config.NewConf(confPath)
+	if err != nil {
+		return err
+	}
 
-    var filt *log4go.FileLogWriter
+	var filt *log4go.FileLogWriter
 
-    // debug
-    debug_enable := conf.Bool("debug.Enable")
-    debug_file := conf.String("debug.FileName")
-    filt = nil
-    if debug_enable {
-        filt = newFileFilter(debug_file)
-    }
-    debugLogger["debug"] = &log4go.Filter{log4go.DEBUG, filt}
+	// debug
+	debug_enable := conf.Bool("debug.Enable")
+	debug_file := conf.String("debug.FileName")
+	filt = nil
+	if debug_enable {
+		filt = newFileFilter(debug_file)
+	}
+	debugLogger["debug"] = &log4go.Filter{log4go.DEBUG, filt}
 
-    // info
-    info_enable := conf.Bool("info.Enable")
-    info_file := conf.String("info.FileName")
-    filt = nil
-    if info_enable {
-        filt = newFileFilter(info_file)
-    }
-    infoLogger["info"] = &log4go.Filter{log4go.INFO,filt}
+	// info
+	info_enable := conf.Bool("info.Enable")
+	info_file := conf.String("info.FileName")
+	filt = nil
+	if info_enable {
+		filt = newFileFilter(info_file)
+	}
+	infoLogger["info"] = &log4go.Filter{log4go.INFO, filt}
 
-    // error
-    error_enable := conf.Bool("error.Enable")
-    error_file := conf.String("error.FileName")
-    filt = nil
-    if error_enable {
-        filt = newFileFilter(error_file)
-    }
-    errorLogger["error"] = &log4go.Filter{log4go.WARNING,filt}
+	// error
+	error_enable := conf.Bool("error.Enable")
+	error_file := conf.String("error.FileName")
+	filt = nil
+	if error_enable {
+		filt = newFileFilter(error_file)
+	}
+	errorLogger["error"] = &log4go.Filter{log4go.WARNING, filt}
 
-    return nil
+	return nil
 }
-
