@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-var testpath = filepath.Join(os.Getenv("HOME"), "hehe", "tmp", "goosedb", "test_datamanager")
+var testpath = filepath.Join(os.Getenv("HOME"), "tmp", "goosedb", "test_datamanager")
 var maxId InIdType = 10 * 10000           // 100w
 var maxFileSz uint32 = 1024 * 1024 * 1024 // 1024MB
 var docSize int32 = 2 * 1024              // 5k
@@ -55,21 +55,36 @@ func openInitAppendData(t *testing.T) {
 		return
 	}
 
+	err = dm.Append(0, newData(int32(0)))
+	if err != nil {
+		t.Logf("write invalid id %d got err", 0)
+	} else {
+		t.Errorf("write invalid id %d return no err", 0)
+		return
+	}
+	err = dm.Append(maxId+1, newData(int32(0)))
+	if err != nil {
+		t.Logf("write invalid id %d got err", maxId+1)
+	} else {
+		t.Errorf("write invalid id %d return no err", maxId+1)
+		return
+	}
+
 	var i InIdType
-	for i = 0; i < maxId; i++ {
+	for i = 1; i <= maxId; i++ {
 		err := dm.Append(i, newData(int32(i)))
 		if err != nil {
 			t.Errorf("dm.Append --- %s", err.Error())
-			break
+			return
 		}
 	}
 
 	var dataBuf Data = make([]byte, docSize)
-	for i = 0; i < maxId; i++ {
+	for i = 1; i <= maxId; i++ {
 		err := dm.ReadData(i, &dataBuf)
 		if err != nil {
 			t.Errorf("openInitReadData --- %s", err.Error())
-			break
+			return
 		}
 		str := checkData(int32(i), dataBuf)
 		if len(str) > 0 {
@@ -91,9 +106,25 @@ func openInitReadData(t *testing.T) {
 		return
 	}
 
-	var i InIdType
 	var dataBuf Data = make([]byte, docSize)
-	for i = 0; i < maxId; i++ {
+
+	err = dm.ReadData(0, &dataBuf)
+	if err != nil {
+		t.Logf("read invalid id %d got err", 0)
+	} else {
+		t.Errorf("read invalid id %d return no err", 0)
+		return
+	}
+	err = dm.ReadData(maxId+1, &dataBuf)
+	if err != nil {
+		t.Logf("read invalid id %d got err", maxId+1)
+	} else {
+		t.Errorf("read invalid id %d return no err", maxId+1)
+		return
+	}
+
+	var i InIdType
+	for i = 1; i <= maxId; i++ {
 		err := dm.ReadData(i, &dataBuf)
 		if err != nil {
 			t.Errorf("openInitReadData --- %s", err.Error())

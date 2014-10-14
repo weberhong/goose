@@ -10,7 +10,7 @@ import (
 
 // data磁盘数据文件自描述所需的字段
 type DataManagerStatus struct {
-	// 最大id
+	// 最大id,有效id范围[1,MaxInId]
 	MaxInId InIdType
 }
 
@@ -52,7 +52,9 @@ func (this *DataManager) Open(path string) error {
 	}
 
 	// 一级索引mmap打开
-	data0Size := uint32(this.dataStatus.MaxInId) * uint32(binary.Size(BigFileIndex{}))
+	// id有效范围[1,MaxInId],0不使用导致后面要多分配一个空间
+	// 打开也要多打开一个单位的空间
+	data0Size := uint32(1+this.dataStatus.MaxInId) * uint32(binary.Size(BigFileIndex{}))
 	data0Name := fmt.Sprintf("data.d0")
 	err = this.data0.OpenFile(this.filePath, data0Name, data0Size)
 	if err != nil {
@@ -81,7 +83,8 @@ func (this *DataManager) Init(path string, maxId InIdType, maxFileSz uint32) err
 	this.StatusFilePath = filepath.Join(this.filePath, "data.stat")
 
 	// 一级索引mmap打开
-	data0Size := uint32(this.dataStatus.MaxInId) * uint32(binary.Size(BigFileIndex{}))
+	// id有效范围[1,MaxInId],0不使用导致后面要多分配一个空间
+	data0Size := uint32(1+this.dataStatus.MaxInId) * uint32(binary.Size(BigFileIndex{}))
 	data0Name := fmt.Sprintf("data.d0")
 	err := this.data0.OpenFile(this.filePath, data0Name, data0Size)
 	if err != nil {
@@ -122,7 +125,7 @@ func (this *DataManager) Close() error {
 // 同一个InId多次写入会进行覆盖操作,只有最后一次写操作数据有效,而且之前的写入的
 // 数据会变成垃圾数据占用磁盘空间,无法删除.
 func (this *DataManager) Append(inId InIdType, d Data) error {
-	if inId > this.dataStatus.MaxInId {
+	if inId < 1 || inId > this.dataStatus.MaxInId {
 		return log.Error("inId [%d] illegal MaxInId[%d]", inId, this.dataStatus.MaxInId)
 	}
 
@@ -146,7 +149,7 @@ func (this *DataManager) Append(inId InIdType, d Data) error {
 
 // 读取Data数据,可以并发.
 func (this *DataManager) ReadData(inId InIdType, buf *Data) error {
-	if inId == 0 || inId > this.dataStatus.MaxInId {
+	if inId < 1 || inId > this.dataStatus.MaxInId {
 		return log.Error("inId [%d] illegal MaxInId[%d]", inId, this.dataStatus.MaxInId)
 	}
 
