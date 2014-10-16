@@ -2,6 +2,8 @@ package goose
 
 import (
 	"fmt"
+	"github.com/fatih/color"
+	"github.com/getwe/figlet4go"
 	log "github.com/getwe/goose/log"
 	flags "github.com/jessevdk/go-flags"
 	"os"
@@ -58,10 +60,12 @@ func (this *Goose) Run() {
 	parser := flags.NewParser(&opts, flags.HelpFlag)
 	_, err := parser.ParseArgs(os.Args)
 	if err != nil {
+		fmt.Println(this.showLogo())
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	if opts.BuildMode && len(opts.DataFile) == 0 {
+		fmt.Println(this.showLogo())
 		parser.WriteHelp(os.Stderr)
 		os.Exit(1)
 	}
@@ -88,6 +92,22 @@ func (this *Goose) Run() {
 	// BUG(log4go) log4go need time to sync ...(wtf)
 	// see http://stackoverflow.com/questions/14252766/abnormal-behavior-of-log4go
 	time.Sleep(100 * time.Millisecond)
+}
+
+func (this *Goose) showLogo() string {
+	str := "goose"
+	ascii := figlet4go.NewAsciiRender()
+
+	// change the font color
+	options := figlet4go.NewRenderOptions()
+	options.FontColor = make([]color.Attribute, len(str))
+	options.FontColor[0] = color.FgMagenta
+	options.FontColor[1] = color.FgYellow
+	options.FontColor[2] = color.FgBlue
+	options.FontColor[3] = color.FgCyan
+	options.FontColor[4] = color.FgRed
+	renderStr, _ := ascii.RenderOpts(str, options)
+	return renderStr
 }
 
 // 建库模式运行
